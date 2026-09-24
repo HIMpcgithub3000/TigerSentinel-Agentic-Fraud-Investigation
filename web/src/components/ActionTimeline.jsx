@@ -1,7 +1,9 @@
-import React from 'react';
-import { ArrowRight, ShieldAlert, CheckCircle2, UserCheck, Clock, FileWarning } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowRight, ShieldAlert, CheckCircle2, UserCheck, Clock, ShieldCheck, Check } from 'lucide-react';
 
 export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
+  const [approvedActions, setApprovedActions] = useState({});
+
   if (!nba) return null;
 
   const initial = nba.initial || [];
@@ -9,16 +11,39 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
   const whatChanged = nba.what_changed || "nothing";
   const evReq = evidenceRequests && evidenceRequests.length > 0 ? evidenceRequests[0] : null;
 
+  const handleActionClick = (action, route) => {
+    if (onApprove) {
+      onApprove(action, route);
+      setApprovedActions(prev => ({ ...prev, [action]: true }));
+    }
+  };
+
   const getRouteBadge = (route) => {
     switch (route) {
       case 'auto':
-        return <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded">AUTO</span>;
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded uppercase tracking-wider">
+            AUTO
+          </span>
+        );
       case 'L1':
-        return <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">L1 APPROVAL</span>;
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded uppercase tracking-wider">
+            L1 APPROVAL
+          </span>
+        );
       case 'L2':
-        return <span className="px-2 py-0.5 text-[10px] font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded">L2 MANAGER</span>;
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded uppercase tracking-wider">
+            L2 MANAGER
+          </span>
+        );
       default:
-        return <span className="px-2 py-0.5 text-[10px] font-semibold bg-slate-700 text-slate-300 rounded">{route}</span>;
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 rounded uppercase tracking-wider">
+            {route}
+          </span>
+        );
     }
   };
 
@@ -27,74 +52,110 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
       {/* 2-Phase Action Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Phase 1: Initial Actions */}
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-          <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-blue-400" /> Phase 1: Initial Recommendation
-            </span>
-            <span className="text-[10px] text-slate-500">Before Extra Evidence</span>
-          </div>
-          <div className="space-y-2.5">
-            {initial.map((a, idx) => (
-              <div key={idx} className="p-2.5 bg-slate-800/50 rounded-lg border border-slate-700/60">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-100">{a.action}</span>
-                  {getRouteBadge(a.route)}
+        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-blue-400" /> Phase 1: Initial Actions
+              </span>
+              <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+                Pre-Evidence
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {initial.map((a, idx) => (
+                <div key={idx} className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/60 transition hover:border-slate-600">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-100">{a.action}</span>
+                    {getRouteBadge(a.route)}
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">{a.reason}</p>
                 </div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{a.reason}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Phase 2: Final Actions */}
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-blue-900/40">
-          <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-              <ShieldAlert className="w-3.5 h-3.5 text-blue-400" /> Phase 2: Final Recommendation
-            </span>
-            <span className="text-[10px] text-blue-400/80">After Evidence Ingestion</span>
-          </div>
-          <div className="space-y-2.5">
-            {final.map((a, idx) => (
-              <div key={idx} className="p-2.5 bg-blue-950/20 rounded-lg border border-blue-900/50">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-blue-100">{a.action}</span>
-                  <div className="flex items-center gap-2">
-                    {getRouteBadge(a.route)}
-                    {a.route !== 'auto' && onApprove && (
-                      <button
-                        onClick={() => onApprove(a.action, a.route)}
-                        className="px-2 py-0.5 text-[10px] font-medium bg-blue-600 hover:bg-blue-500 text-white rounded transition shadow-sm"
-                      >
-                        Authorize
-                      </button>
-                    )}
+        <div className="bg-slate-900/60 p-4 rounded-xl border border-blue-900/50 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-blue-400" /> Phase 2: Final Actions
+              </span>
+              <span className="text-[10px] font-mono text-blue-400/90 bg-blue-950/60 border border-blue-800/40 px-2 py-0.5 rounded">
+                Post-Evidence
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {final.map((a, idx) => {
+                const isApproved = approvedActions[a.action];
+                return (
+                  <div key={idx} className="p-3 bg-blue-950/20 rounded-lg border border-blue-900/40 transition hover:border-blue-700/60">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-blue-100">{a.action}</span>
+                      <div className="flex items-center gap-2">
+                        {getRouteBadge(a.route)}
+                        {a.route !== 'auto' && (
+                          <button
+                            onClick={() => handleActionClick(a.action, a.route)}
+                            disabled={isApproved}
+                            className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition flex items-center gap-1 shadow-sm ${
+                              isApproved
+                                ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 cursor-default'
+                                : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer active:scale-95'
+                            }`}
+                          >
+                            {isApproved ? (
+                              <>
+                                <Check className="w-3 h-3" /> Authorized
+                              </>
+                            ) : (
+                              'Authorize'
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">{a.reason}</p>
                   </div>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">{a.reason}</p>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Controlled Evidence Request & Response Interlude */}
       {evReq && (
-        <div className="p-3 bg-purple-950/20 rounded-lg border border-purple-900/40 flex items-start gap-3">
-          <UserCheck className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+        <div className="p-3.5 bg-purple-950/30 rounded-xl border border-purple-900/50 flex items-start gap-3">
+          <div className="w-7 h-7 rounded-lg bg-purple-900/40 border border-purple-700/50 flex items-center justify-center text-purple-400 shrink-0">
+            <UserCheck className="w-4 h-4" />
+          </div>
           <div className="text-xs space-y-1">
-            <span className="font-semibold text-purple-300">Controlled Follow-Up Dispatched ({evReq.type}):</span>
-            <p className="text-slate-300 italic">"{evReq.assumed_response}"</p>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-purple-300">Controlled Follow-Up Verification Ingested</span>
+              <span className="text-[10px] font-mono bg-purple-900/60 text-purple-200 px-1.5 py-0.5 rounded">
+                Type: {evReq.type}
+              </span>
+            </div>
+            <p className="text-slate-200 italic font-serif">"{evReq.assumed_response}"</p>
           </div>
         </div>
       )}
 
       {/* What Changed Banner */}
       {whatChanged && whatChanged !== "nothing" && (
-        <div className="p-3 bg-emerald-950/20 rounded-lg border border-emerald-900/40 flex items-center gap-2 text-xs text-emerald-300">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span><strong>Progression Shift:</strong> {whatChanged}</span>
+        <div className="p-3.5 bg-emerald-950/30 rounded-xl border border-emerald-900/50 flex items-center gap-3 text-xs text-emerald-300">
+          <div className="w-7 h-7 rounded-lg bg-emerald-900/40 border border-emerald-700/50 flex items-center justify-center text-emerald-400 shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="font-bold text-emerald-200 block text-[11px] uppercase tracking-wider">
+              Autonomous Governance Progression Shift
+            </span>
+            <p className="text-emerald-300 font-sans text-xs mt-0.5">{whatChanged}</p>
+          </div>
         </div>
       )}
     </div>
