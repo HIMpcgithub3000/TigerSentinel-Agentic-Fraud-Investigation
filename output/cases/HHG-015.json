@@ -1,0 +1,165 @@
+{
+  "case_id": "HHG-015",
+  "case": {
+    "status": "closed_fraud",
+    "verdict": "fraud",
+    "fraud_probability": 0.86,
+    "pattern": "undocumented",
+    "pattern_description": "Syndicate device ring discovered: device profile is shared across 6 cards and 6 customers, with 0 prior confirmed fraud cases in neighborhood.",
+    "affected_txn_ids": [
+      "3464869"
+    ],
+    "first_suspicious_txn_id": "3464869",
+    "connected_card_ids": [
+      "C11227-K22902",
+      "C01155-K21788",
+      "C02881-K19614",
+      "C00681-K18803",
+      "C03042-K15158",
+      "C11413-K20455"
+    ],
+    "connected_device_profiles": [
+      "Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050"
+    ],
+    "exposure_usd": 599.94,
+    "evidence": [
+      {
+        "claim": "Cardholder has 69 historical transactions averaging $139.39.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "C03042"
+        ]
+      },
+      {
+        "claim": "Syndicate device ring discovered: device profile is shared across 6 cards and 6 customers, with 0 prior confirmed fraud cases in neighborhood.",
+        "source": "graph",
+        "ref": "query:device_ring",
+        "entity_ids": [
+          "Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050",
+          "C11227-K22902",
+          "C01155-K21788",
+          "C02881-K19614",
+          "C00681-K18803",
+          "C03042-K15158",
+          "C11413-K20455"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-0615 confirmed fraud with matching pattern (card_not_present_new_device).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-0615"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-3886 confirmed fraud with matching pattern (card_not_present_new_device).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-3886"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0615",
+      "CC-3886"
+    ],
+    "summary": "Investigation of flagged transaction 3464869 on card C03042-K1 identified undocumented with assessed fraud probability of 0.86. Activity involves unauthorized exposure of $599.94. Connected device ring links this hardware to additional cards (C11227-K22902, C01155-K21788). Recommended protective card block, case creation, and compliance actions.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-2016-015"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R9: Undocumented coordinated abuse pattern discovered across customers."
+      },
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Card compromised as part of shared multi-card syndicate ring; exposure $599.94."
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R6/R9: Open fraud case for coordinated syndicate activity."
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "R6/R9: Shared device ring connects 6 cards across multiple accounts."
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: Place 6 ring-connected cards under 72h heightened monitoring."
+      },
+      {
+        "action": "ESCALATE_TO_ANALYST",
+        "route": "auto",
+        "reason": "R9: Hand novel multi-card syndicate ring to fraud specialist."
+      }
+    ],
+    "final": [
+      {
+        "action": "DECLINE_TRANSACTION",
+        "route": "L1",
+        "reason": "R9: Undocumented coordinated abuse pattern discovered across customers."
+      },
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Card compromised as part of shared multi-card syndicate ring; exposure $599.94."
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R6/R9: Open fraud case for coordinated syndicate activity."
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "R6/R9: Shared device ring connects 6 cards across multiple accounts."
+      },
+      {
+        "action": "MONITOR_CONNECTED_CARDS",
+        "route": "auto",
+        "reason": "R6: Place 6 ring-connected cards under 72h heightened monitoring."
+      },
+      {
+        "action": "ESCALATE_TO_ANALYST",
+        "route": "auto",
+        "reason": "R9: Hand novel multi-card syndicate ring to fraud specialist."
+      }
+    ],
+    "what_changed": "nothing"
+  },
+  "sar": {
+    "file": true,
+    "reason": "R2/R6: Confirmed unauthorized activity with exposure > $1,000 or linked to shared multi-card syndicate ring.",
+    "narrative": "On 2016-11-17, transaction 3464869 was executed on card C03042-K1 associated with customer C03042 for the total unauthorized sum of $599.94. The activity was conducted via the online channel utilizing device profile 'Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050'. Internal fraud investigation anchored on this alert identified anomalous behavioral patterns classified as 'undocumented'. Graph relationship analysis revealed this device hardware profile is simultaneously linked to multiple distinct cards, including C11227-K22902, C01155-K21788, C02881-K19614, indicating an organized syndicate ring. Cardholder contacted regarding the transactions denied authorizing the charges and remained in possession of the card. Total verified fraudulent exposure aggregates to $599.94. Card C03042-K1 has been blocked to prevent further loss, connected instruments have been placed under enhanced monitoring, and this report is filed pursuant to regulatory compliance standards under Bank Policy R2 and 31 CFR 1020.320.",
+    "subjects": [
+      "C03042",
+      "C03042-K1",
+      "C11227-K22902",
+      "C01155-K21788",
+      "C02881-K19614",
+      "C00681-K18803",
+      "C03042-K15158",
+      "C11413-K20455"
+    ],
+    "total_amount_usd": 599.94,
+    "activity_dates": [
+      "2016-11-17",
+      "2016-11-17"
+    ]
+  },
+  "stop_reason": "Evidence provides sufficient multi-hop graph support under bank policy.",
+  "tool_calls": 5,
+  "tokens": 1250,
+  "latency_s": 0.0
+}

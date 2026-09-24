@@ -1,0 +1,116 @@
+{
+  "case_id": "HHG-018",
+  "case": {
+    "status": "escalated",
+    "verdict": "uncertain",
+    "fraud_probability": 0.45,
+    "pattern": "account_takeover",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3491361"
+    ],
+    "first_suspicious_txn_id": "3491361",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 39.08,
+    "evidence": [
+      {
+        "claim": "Cardholder has 5867 historical transactions averaging $141.29.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "C02354"
+        ]
+      },
+      {
+        "claim": "Flagged in-person purchase occurred in billing region 126.0, which is among the cardholder's established historical regions.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "3491361",
+          "126.0"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-0255 confirmed fraud with matching pattern (account_takeover).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-0255"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-0454 confirmed fraud with matching pattern (account_takeover).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-0454"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-0631 confirmed fraud with matching pattern (out_of_region_use).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-0631"
+        ]
+      },
+      {
+        "claim": "Cardholder explicitly states they did not make this purchase and still has the card.",
+        "source": "customer",
+        "ref": "evidence_request:customer_validation",
+        "entity_ids": [
+          "C02354-K19248"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-0255",
+      "CC-0454",
+      "CC-0631"
+    ],
+    "summary": "Investigation of flagged transaction 3491361 on card C02354-K2 identified account takeover with assessed fraud probability of 0.45. Activity involves unauthorized exposure of $39.08. Recommended protective card block, case creation, and compliance actions.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-2016-018"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Customer reported unrecognized purchase; exposure $39.08."
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2: Customer dispute formally logged."
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Customer reported unrecognized purchase; exposure $39.08."
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2: Customer dispute formally logged."
+      }
+    ],
+    "what_changed": "nothing"
+  },
+  "sar": {
+    "file": false,
+    "reason": "Activity does not meet mandatory filing criteria under Bank Policy R2 or R6.",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer direct dispute provides initial testimony; graph corroboration assessed.",
+  "tool_calls": 5,
+  "tokens": 1250,
+  "latency_s": 0.01
+}

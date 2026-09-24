@@ -1,0 +1,73 @@
+// TigerGraph Loading Job for FraudGraph
+USE GRAPH FraudGraph
+
+CREATE LOADING JOB load_fraud_data FOR GRAPH FraudGraph {
+    DEFINE FILENAME txns_file;
+    DEFINE FILENAME identity_file;
+    DEFINE FILENAME closed_cases_file;
+
+    // Load Transactions & Entities
+    LOAD txns_file TO VERTEX Transaction VALUES(
+        $"TransactionID",
+        $"ts",
+        $"TransactionAmt",
+        $"channel",
+        $"risk_score",
+        $"addr1",
+        $"addr2",
+        $"ProductCD"
+    ) USING header="true", separator=",";
+
+    LOAD txns_file TO VERTEX Customer VALUES($"customer_id") USING header="true", separator=",";
+    
+    LOAD txns_file TO VERTEX Card VALUES(
+        gsql_concat($"customer_id", "-K", $"card1"),
+        $"card1", $"card2", $"card3", $"card4", $"card6"
+    ) USING header="true", separator=",";
+
+    LOAD txns_file TO EDGE OWNS VALUES(
+        $"customer_id",
+        gsql_concat($"customer_id", "-K", $"card1")
+    ) USING header="true", separator=",";
+
+    LOAD txns_file TO EDGE MADE VALUES(
+        gsql_concat($"customer_id", "-K", $"card1"),
+        $"TransactionID"
+    ) USING header="true", separator=",";
+
+    LOAD txns_file TO VERTEX EmailDomain VALUES($"P_emaildomain") WHERE $"P_emaildomain" IS NOT EMPTY USING header="true", separator=",";
+    LOAD txns_file TO EDGE PURCHASER_EMAIL VALUES($"TransactionID", $"P_emaildomain") WHERE $"P_emaildomain" IS NOT EMPTY USING header="true", separator=",";
+
+    LOAD txns_file TO VERTEX BillingRegion VALUES($"addr1") WHERE $"addr1" IS NOT EMPTY USING header="true", separator=",";
+    LOAD txns_file TO EDGE BILLED_IN VALUES($"TransactionID", $"addr1") WHERE $"addr1" IS NOT EMPTY USING header="true", separator=",";
+
+    // Load Device Profiles & Identity
+    LOAD identity_file TO VERTEX DeviceProfile VALUES(
+        gsql_concat($"DeviceInfo", " | ", $"id_30", " | ", $"id_31", " | ", $"id_33"),
+        $"DeviceInfo",
+        $"id_30",
+        $"id_31",
+        $"id_33"
+    ) USING header="true", separator=",";
+
+    LOAD identity_file TO EDGE FROM_DEVICE VALUES(
+        $"TransactionID",
+        gsql_concat($"DeviceInfo", " | ", $"id_30", " | ", $"id_31", " | ", $"id_33")
+    ) USING header="true", separator=",";
+
+    // Load Closed Historical Cases
+    LOAD closed_cases_file TO VERTEX ClosedCase VALUES(
+        $"case_id",
+        $"customer_id",
+        $"card_id",
+        $"opened_at",
+        $"closed_at",
+        $"outcome",
+        $"pattern",
+        $"exposure_usd",
+        $"n_txns",
+        $"analyst_notes"
+    ) USING header="true", separator=",";
+
+    LOAD closed_cases_file TO EDGE ON_CARD VALUES($"case_id", $"card_id") USING header="true", separator=",";
+}

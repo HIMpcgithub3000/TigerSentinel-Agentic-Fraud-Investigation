@@ -1,0 +1,32 @@
+// GSQL Query: customer_baseline
+// Retrieves customer profile, owned cards, historical transaction stats before as_of_ts
+USE GRAPH FraudGraph
+
+CREATE QUERY customer_baseline(STRING customer_id, STRING as_of_ts) FOR GRAPH FraudGraph {
+    SumAccum<DOUBLE> @amt;
+    ListAccum<STRING> @@cards;
+    ListAccum<STRING> @@regions;
+    SumAccum<INT> @@txn_count;
+    SumAccum<DOUBLE> @@total_spend;
+    MaxAccum<DOUBLE> @@max_spend;
+    MinAccum<DOUBLE> @@min_spend;
+
+    Customers = {Customer.*};
+    TargetCustomer = SELECT c FROM Customers:c WHERE c.customer_id == customer_id;
+
+    Cards = SELECT cd FROM TargetCustomer:c -(OWNS:e)-> Card:cd
+            ACCUM @@cards += cd.card_id;
+
+    Txns = SELECT t FROM Cards:cd -(MADE:e)-> Transaction:t
+           WHERE t.ts <= as_of_ts
+           ACCUM 
+               @@txn_count += 1,
+               @@total_spend += t.amount,
+               @@max_spend += t.amount,
+               @@min_spend += t.amount,
+               @@regions += t.addr1;
+
+    PRINT customer_id, @@cards, @@txn_count, @@total_spend, 
+          (@@total_spend / CASE WHEN @@txn_count > 0 THEN @@txn_count ELSE 1 END) AS avg_spend,
+          @@max_spend, @@min_spend, @@regions;
+}

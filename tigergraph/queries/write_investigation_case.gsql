@@ -1,0 +1,44 @@
+// GSQL Query: write_investigation_case
+// Persists investigation case verdict, metadata, and memory links to TigerGraph
+USE GRAPH FraudGraph
+
+CREATE QUERY write_investigation_case(
+    STRING case_id,
+    STRING verdict,
+    DOUBLE fraud_probability,
+    STRING pattern,
+    DOUBLE exposure_usd,
+    STRING status,
+    STRING summary,
+    STRING flagged_txn_id,
+    STRING card_id,
+    STRING created_at
+) FOR GRAPH FraudGraph {
+    
+    // Insert or update InvestigationCase vertex
+    INSERT INTO InvestigationCase VALUES (
+        case_id,
+        verdict,
+        fraud_probability,
+        pattern,
+        exposure_usd,
+        status,
+        summary,
+        TRUE,
+        created_at
+    );
+
+    // Link case to flagged transaction
+    INSERT INTO INVESTIGATION_TARGETS (FROM, TO) VALUES (
+        case_id InvestigationCase,
+        flagged_txn_id Transaction
+    );
+
+    // Link case to investigated card
+    INSERT INTO INVESTIGATION_INVOLVES_CARD (FROM, TO) VALUES (
+        case_id InvestigationCase,
+        card_id Card
+    );
+
+    PRINT case_id, TRUE AS written_to_graph;
+}

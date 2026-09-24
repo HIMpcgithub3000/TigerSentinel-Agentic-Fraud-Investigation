@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraud-agent-tigergraph"
+version = "1.0.0"
+description = "Agentic Fraud Investigation and Next-Best Action on TigerGraph"
+readme = "README.md"
+authors = [{ name = "Himanshu Sharma" }]
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "pandas>=2.1.0",
+    "networkx>=3.2.0",
+    "langgraph>=0.0.20",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.5",
+    "pyTigerGraph>=2.0.4",
+    "httpx>=0.26.0",
+    "rich>=13.7.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.1.0"
+]

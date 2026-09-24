@@ -1,0 +1,19 @@
+// GSQL Query: similar_closed_cases
+// Retrieves historical closed cases matching pattern or cards strictly closed before as_of_ts
+USE GRAPH FraudGraph
+
+CREATE QUERY similar_closed_cases(STRING pattern, STRING card_id, INT top_k, STRING as_of_ts) FOR GRAPH FraudGraph {
+    TYPEDEF TUPLE<STRING case_id, STRING outcome, STRING pattern, DOUBLE exposure_usd, STRING notes> CaseMatch;
+    ListAccum<CaseMatch> @@matches;
+
+    Cases = {ClosedCase.*};
+    MatchingCases = SELECT c FROM Cases:c
+                    WHERE c.closed_at <= as_of_ts AND (c.pattern == pattern OR c.card_id == card_id)
+                    ORDER BY c.closed_at DESC
+                    LIMIT top_k;
+
+    Target = SELECT c FROM MatchingCases:c
+             ACCUM @@matches += CaseMatch(c.case_id, c.outcome, c.pattern, c.exposure_usd, c.analyst_notes);
+
+    PRINT @@matches;
+}

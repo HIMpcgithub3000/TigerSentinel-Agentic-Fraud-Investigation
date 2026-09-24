@@ -1,0 +1,111 @@
+{
+  "case_id": "HHG-002",
+  "case": {
+    "status": "escalated",
+    "verdict": "uncertain",
+    "fraud_probability": 0.35,
+    "pattern": "card_not_present_fraud",
+    "pattern_description": "",
+    "affected_txn_ids": [
+      "3478782"
+    ],
+    "first_suspicious_txn_id": "3478782",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 292.36,
+    "evidence": [
+      {
+        "claim": "Cardholder has 36 historical transactions averaging $51.54.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "C11891"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-4160 confirmed fraud with matching pattern (card_not_present_fraud).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-4160"
+        ]
+      },
+      {
+        "claim": "Cardholder has 36 historical transactions averaging $51.54.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "C11891"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-4160 confirmed fraud with matching pattern (card_not_present_fraud).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-4160"
+        ]
+      },
+      {
+        "claim": "Cardholder explicitly states they did not make this purchase and still has the card.",
+        "source": "customer",
+        "ref": "evidence_request:customer_validation",
+        "entity_ids": [
+          "C11891-K18586"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-4160"
+    ],
+    "summary": "Investigation of flagged transaction 3478782 on card C11891-K1 identified card not present fraud with assessed fraud probability of 0.35. Activity involves unauthorized exposure of $292.36. Recommended protective card block, case creation, and compliance actions.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-2016-002"
+  },
+  "evidence_requests": [
+    {
+      "type": "customer_validation",
+      "asked_after_step": 4,
+      "assumed_response": "Customer states they did not make these purchases and still has the card."
+    }
+  ],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "VERIFY_WITH_CUSTOMER",
+        "route": "auto",
+        "reason": "R1: Probability 0.10 on weak/single signal; confirm before blocking."
+      },
+      {
+        "action": "MONITOR_CARD",
+        "route": "auto",
+        "reason": "R4: Monitor card pending customer verification."
+      }
+    ],
+    "final": [
+      {
+        "action": "BLOCK_CARD",
+        "route": "L1",
+        "reason": "R2: Customer denied purchases; exposure $292.36."
+      },
+      {
+        "action": "CREATE_CASE",
+        "route": "auto",
+        "reason": "R2: Customer dispute confirmed."
+      }
+    ],
+    "what_changed": "Customer denial confirmed fraud (probability raised to 0.35), triggering card block and regulatory report recommendations."
+  },
+  "sar": {
+    "file": false,
+    "reason": "Activity does not meet mandatory filing criteria under Bank Policy R2 or R6.",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Customer verification response settled the verdict and confirmed defensible course of action. Further steps would not alter the recommended policy actions.",
+  "tool_calls": 6,
+  "tokens": 1250,
+  "latency_s": 0.0
+}

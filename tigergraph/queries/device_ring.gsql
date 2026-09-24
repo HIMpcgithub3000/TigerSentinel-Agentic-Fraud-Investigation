@@ -1,0 +1,35 @@
+// GSQL Query: device_ring
+// Discovers multi-card, multi-customer sharing of a device profile with historical fraud cases
+USE GRAPH FraudGraph
+
+CREATE QUERY device_ring(STRING profile_id, STRING as_of_ts) FOR GRAPH FraudGraph {
+    SetAccum<STRING> @@connected_txns;
+    SetAccum<STRING> @@connected_cards;
+    SetAccum<STRING> @@connected_customers;
+    SetAccum<STRING> @@prior_fraud_cases;
+
+    Profiles = {DeviceProfile.*};
+    TargetProfile = SELECT p FROM Profiles:p WHERE p.profile_id == profile_id;
+
+    Txns = SELECT t FROM TargetProfile:p -(DEVICE_USED_IN:e)-> Transaction:t
+           WHERE t.ts <= as_of_ts
+           ACCUM @@connected_txns += t.transaction_id;
+
+    Cards = SELECT cd FROM Txns:t -(MADE_BY:e)-> Card:cd
+            ACCUM @@connected_cards += cd.card_id;
+
+    Customers = SELECT cust FROM Cards:cd -(OWNED_BY:e)-> Customer:cust
+                ACCUM @@connected_customers += cust.customer_id;
+
+    Cases = SELECT cc FROM Cards:cd -(HAD_CLOSED_CASE:e)-> ClosedCase:cc
+            WHERE cc.closed_at <= as_of_ts AND cc.outcome == "confirmed_fraud"
+            ACCUM @@prior_fraud_cases += cc.case_id;
+
+    PRINT profile_id, 
+          @@connected_txns.size() AS txn_count,
+          @@connected_cards.size() AS card_count,
+          @@connected_customers.size() AS customer_count,
+          @@connected_cards,
+          @@connected_customers,
+          @@prior_fraud_cases;
+}

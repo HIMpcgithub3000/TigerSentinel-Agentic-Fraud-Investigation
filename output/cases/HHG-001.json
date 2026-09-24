@@ -1,0 +1,106 @@
+{
+  "case_id": "HHG-001",
+  "case": {
+    "status": "closed_legitimate",
+    "verdict": "legitimate",
+    "fraud_probability": 0.24,
+    "pattern": "none",
+    "pattern_description": "",
+    "affected_txn_ids": [],
+    "first_suspicious_txn_id": "",
+    "connected_card_ids": [],
+    "connected_device_profiles": [],
+    "exposure_usd": 0.0,
+    "evidence": [
+      {
+        "claim": "Cardholder has 360 historical transactions averaging $116.69.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "C12382"
+        ]
+      },
+      {
+        "claim": "Flagged in-person purchase occurred in billing region 444.0, which is among the cardholder's established historical regions.",
+        "source": "graph",
+        "ref": "query:customer_baseline",
+        "entity_ids": [
+          "3514030",
+          "444.0"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-1066 confirmed fraud with matching pattern (out_of_region_use).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-1066"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-1673 confirmed fraud with matching pattern (card_not_present_new_device).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-1673"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-2964 confirmed fraud with matching pattern (out_of_region_use).",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-2964"
+        ]
+      }
+    ],
+    "similar_prior_cases": [
+      "CC-1066",
+      "CC-1673",
+      "CC-2964"
+    ],
+    "summary": "Investigation of flagged transaction 3514030 on card C12382-K1 confirmed legitimate activity. The transaction characteristics and billing region conform to the cardholder's established multi-month historical baseline. Alert cleared with no fraud detected.",
+    "written_to_graph": true,
+    "graph_case_id": "CASE-2016-001"
+  },
+  "evidence_requests": [],
+  "next_best_actions": {
+    "initial": [
+      {
+        "action": "ALLOW_TRANSACTION",
+        "route": "auto",
+        "reason": "Activity aligns with cardholder established historical baseline; alert cleared."
+      },
+      {
+        "action": "CLOSE_NO_FRAUD",
+        "route": "auto",
+        "reason": "R3: Legitimate activity confirmed by multi-hop graph history."
+      }
+    ],
+    "final": [
+      {
+        "action": "ALLOW_TRANSACTION",
+        "route": "auto",
+        "reason": "Activity aligns with cardholder established historical baseline; alert cleared."
+      },
+      {
+        "action": "CLOSE_NO_FRAUD",
+        "route": "auto",
+        "reason": "R3: Legitimate activity confirmed by multi-hop graph history."
+      }
+    ],
+    "what_changed": "nothing"
+  },
+  "sar": {
+    "file": false,
+    "reason": "Activity does not meet mandatory filing criteria under Bank Policy R2 or R6.",
+    "narrative": "",
+    "subjects": [],
+    "total_amount_usd": 0.0,
+    "activity_dates": []
+  },
+  "stop_reason": "Historical customer baseline confirms legitimate recurring/domestic activity.",
+  "tool_calls": 5,
+  "tokens": 1250,
+  "latency_s": 0.0
+}
