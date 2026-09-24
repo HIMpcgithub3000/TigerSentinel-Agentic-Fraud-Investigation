@@ -8,10 +8,12 @@ import time
 import logging
 import pandas as pd
 from typing import Dict, Any, List, Optional
+from concurrent.futures import ThreadPoolExecutor
 from langgraph.graph import StateGraph, END
 
 from src.fraud_agent.models import InvestigationState, BenchmarkCaseOutput, CaseRecord, NextBestActions, SARReport, EvidenceRequest
 from src.fraud_agent.graph.client import TigerGraphClient
+from src.fraud_agent.agent.tools import ToolRegistry
 from src.fraud_agent.investigation.evidence import EvidenceLedger
 from src.fraud_agent.investigation.hypotheses import HypothesisEngine
 from src.fraud_agent.investigation.sufficiency import SufficiencyEngine
@@ -86,8 +88,8 @@ class FraudInvestigationAgent:
         }
 
     def _node_retrieve_graph_context(self, state: InvestigationState) -> Dict[str, Any]:
-        """Node 2: Executes GSQL queries with temporal cutoff (as_of_ts)."""
-        logger.info("--- [Node: Retrieve Graph Context] ---")
+        """Node 2: Executes GSQL queries in parallel with temporal cutoff (as_of_ts)."""
+        logger.info("--- [Node: Retrieve Graph Context (Parallel Plane)] ---")
         tid = state["flagged_txn_id"]
         cid = state["customer_id"]
         card_id = state["card_id"]
@@ -98,24 +100,29 @@ class FraudInvestigationAgent:
             "TransactionID": tid, "TransactionAmt": 100.0, "channel": "online",
             "card_id": card_id, "customer_id": cid, "device_profile": "Unknown Device"
         }
-
-        # 2. Customer Baseline
-        baseline = self.tg.customer_baseline(cid, cutoff_ts)
-
-        # 3. Card Chronological Window (last 48 hours)
-        window = self.tg.card_window(card_id, hours=48, as_of_ts=cutoff_ts)
-
-        # 4. Device Ring Subgraph
         dev_profile = txn_details.get("device_profile", "")
-        device_ring = self.tg.device_ring(dev_profile, cutoff_ts)
 
-        # 5. Similar Closed Cases
-        similar_cases = self.tg.similar_closed_cases(pattern="", card_id=card_id, as_of_ts=cutoff_ts, top_k=3)
+        # 2. Parallel Graph Retrieval Plane via ThreadPoolExecutor (Section 5.1)
+        t0 = time.time()
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            fut_baseline = executor.submit(self.tg.customer_baseline, cid, cutoff_ts)
+            fut_window = executor.submit(self.tg.card_window, card_id, 48, cutoff_ts)
+            fut_ring = executor.submit(self.tg.device_ring, dev_profile, cutoff_ts, 3)
+            fut_cases = executor.submit(self.tg.similar_closed_cases, "", card_id, None, cutoff_ts, 3)
+            fut_centrality = executor.submit(self.tg.analyze_graph_centrality, card_id, dev_profile, cutoff_ts)
+
+            baseline = fut_baseline.result()
+            window = fut_window.result()
+            device_ring = fut_ring.result()
+            similar_cases = fut_cases.result()
+            centrality = fut_centrality.result()
+        retrieval_ms = round((time.time() - t0) * 1000, 2)
 
         trace = list(state.get("tool_trace", []))
         trace.append({
-            "step": 2, "action": "tigergraph_retrieval",
-            "queries": ["customer_baseline", "card_window", "device_ring", "similar_closed_cases"],
+            "step": 2, "action": "tigergraph_parallel_retrieval",
+            "queries": ["customer_baseline", "card_window", "device_ring", "similar_closed_cases", "graph_centrality"],
+            "retrieval_latency_ms": retrieval_ms,
             "status": "SUCCESS"
         })
 
@@ -125,8 +132,9 @@ class FraudInvestigationAgent:
             "card_txns_window": window,
             "device_ring_info": device_ring,
             "similar_cases_found": similar_cases,
+            "graph_centrality": centrality,
             "tool_trace": trace,
-            "tool_calls_count": state.get("tool_calls_count", 1) + 4
+            "tool_calls_count": state.get("tool_calls_count", 1) + 5
         }
 
     def _node_evaluate_hypotheses(self, state: InvestigationState) -> Dict[str, Any]:
@@ -143,7 +151,8 @@ class FraudInvestigationAgent:
             ledger=ledger,
             customer_response="",
             trigger_type=state.get("trigger_type", "risk_score"),
-            trigger_text=state.get("trigger_text", "")
+            trigger_text=state.get("trigger_text", ""),
+            centrality=state.get("graph_centrality")
         )
 
         trace = list(state.get("tool_trace", []))
@@ -183,8 +192,18 @@ class FraudInvestigationAgent:
         return {"initial_actions": initial_actions}
 
     def _node_assess_sufficiency(self, state: InvestigationState) -> Dict[str, Any]:
-        """Node 5: Assesses whether graph evidence is sufficient to stop or request more."""
+        """Node 5: Assesses whether graph evidence is sufficient or circuit breaker trips."""
         logger.info("--- [Node: Assess Sufficiency] ---")
+        # Circuit Breaker: Enforce max step limit (Section 11)
+        step_count = state.get("tool_calls_count", 0)
+        if step_count >= 10:
+            logger.warning(f"Circuit Breaker Triggered: Maximum step count reached ({step_count}). Halting follow-ups.")
+            return {
+                "is_evidence_sufficient": True,
+                "missing_evidence_reason": "",
+                "stop_reason": "Investigation loop step limit reached (10 steps). Proceeding to final governance and policy determination."
+            }
+
         is_sufficient, reason, req_type = SufficiencyEngine.assess_sufficiency(
             verdict=state["verdict"],
             fraud_probability=state["fraud_probability"],
@@ -203,9 +222,6 @@ class FraudInvestigationAgent:
     def _node_request_followup_evidence(self, state: InvestigationState) -> Dict[str, Any]:
         """Node 6: Dispatches controlled evidence request (Customer Verification / Step-Up)."""
         logger.info("--- [Node: Request Follow-up Evidence] ---")
-        # In IEEE-CIS benchmark cases, customer responses reflect the case context:
-        # If trigger is risk_score but cardholder baseline clearly matches (legitimate), customer confirms.
-        # If trigger is ambiguous fraud, customer denies.
         is_likely_legit = state["verdict"] == "legitimate" or (
             state["customer_profile"].get("known_regions") and
             str(state["flagged_txn_details"].get("addr1")) in state["customer_profile"].get("known_regions", [])
@@ -240,7 +256,6 @@ class FraudInvestigationAgent:
         """Node 7: Reassesses hypotheses with the newly arrived evidence."""
         logger.info("--- [Node: Reassess with Evidence] ---")
         ledger = EvidenceLedger(cutoff_ts=state.get("opened_at", ""))
-        # Re-populate ledger with previous valid items
         for it in state.get("evidence_ledger", []):
             ledger.items.append(it)
 
@@ -252,7 +267,8 @@ class FraudInvestigationAgent:
             device_ring=state["device_ring_info"],
             similar_cases=state["similar_cases_found"],
             ledger=ledger,
-            customer_response=assumed_resp
+            customer_response=assumed_resp,
+            centrality=state.get("graph_centrality")
         )
 
         stop_reason = (
@@ -341,9 +357,19 @@ class FraudInvestigationAgent:
         }
 
     def _node_writeback_to_graph(self, state: InvestigationState) -> Dict[str, Any]:
-        """Node 10: Commits final case verdict and relational memory to TigerGraph."""
-        logger.info("--- [Node: Writeback to TigerGraph] ---")
+        """Node 10: Validates contract and commits final case verdict to TigerGraph."""
+        logger.info("--- [Node: Writeback to TigerGraph (Hardened Transaction)] ---")
         graph_case_id = f"CASE-2016-{state['case_id'].replace('HHG-', '')}"
+
+        # P0.4 Pre-Writeback Contract & Safety Invariant Validation
+        valid_verdicts = {"fraud", "legitimate", "uncertain"}
+        if state["verdict"] not in valid_verdicts:
+            logger.error(f"Writeback Aborted: Invalid verdict '{state['verdict']}'!")
+            return {"written_to_graph": False, "graph_case_id": "", "status": "VALIDATION_FAILED"}
+
+        if float(state.get("exposure_usd", 0.0)) < 0.0:
+            logger.error("Writeback Aborted: Negative exposure detected!")
+            return {"written_to_graph": False, "graph_case_id": "", "status": "VALIDATION_FAILED"}
 
         status_val = "closed_fraud" if state["verdict"] == "fraud" else (
             "closed_legitimate" if state["verdict"] == "legitimate" else "escalated"
@@ -363,9 +389,9 @@ class FraudInvestigationAgent:
 
         trace = list(state.get("tool_trace", []))
         trace.append({
-            "step": 5, "action": "tigergraph_writeback",
+            "step": 5, "action": "tigergraph_idempotent_writeback",
             "graph_case_id": graph_case_id,
-            "status": "COMMITTED"
+            "status": "COMMITTED" if written else "FAILED"
         })
 
         return {

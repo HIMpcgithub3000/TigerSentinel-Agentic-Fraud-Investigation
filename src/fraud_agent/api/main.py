@@ -86,7 +86,8 @@ def get_case(case_id: str):
 @app.get("/api/graph/{case_id}")
 def get_case_subgraph(case_id: str):
     """
-    Returns Cytoscape-formatted graph nodes and edges for multi-hop visualization.
+    Returns Cytoscape-formatted graph nodes, edges, and syndicate topology metadata
+    for deep multi-hop visualization.
     """
     fpath = f"output/cases/{case_id}.json"
     if not os.path.exists(fpath):
@@ -98,46 +99,66 @@ def get_case_subgraph(case_id: str):
     case_info = data.get("case", {})
     nodes = []
     edges = []
+    seen_nodes = set()
+
+    def add_node(nid, label, ntype, **kwargs):
+        if nid not in seen_nodes:
+            seen_nodes.add(nid)
+            node_data = {"id": nid, "label": label, "type": ntype}
+            node_data.update(kwargs)
+            nodes.append({"data": node_data})
+
+    def add_edge(source, target, label, **kwargs):
+        edge_data = {"source": source, "target": target, "label": label}
+        edge_data.update(kwargs)
+        edges.append({"data": edge_data})
 
     # 1. Main Case Node
-    nodes.append({
-        "data": {
-            "id": case_id,
-            "label": f"Case {case_id}",
-            "type": "case",
-            "verdict": case_info.get("verdict")
-        }
-    })
+    add_node(case_id, f"Case {case_id}", "case", verdict=case_info.get("verdict"))
 
-    # 2. Flagged Transaction Node
+    # 2. Flagged & Affected Transactions
     affected = case_info.get("affected_txn_ids", [])
-    if affected:
-        for tid in affected:
-            nodes.append({"data": {"id": f"txn_{tid}", "label": f"Txn #{tid}", "type": "transaction"}})
-            edges.append({"data": {"source": case_id, "target": f"txn_{tid}", "label": "INVESTIGATES"}})
+    for tid in affected:
+        txn_nid = f"txn_{tid}"
+        add_node(txn_nid, f"Txn #{tid}", "transaction")
+        add_edge(case_id, txn_nid, "INVESTIGATES")
 
     # 3. Connected Cards
     cards = case_info.get("connected_card_ids", [])
-    for cid in cards[:6]:
-        nodes.append({"data": {"id": f"card_{cid}", "label": f"Card {cid}", "type": "card"}})
-        edges.append({"data": {"source": case_id, "target": f"card_{cid}", "label": "INVOLVES"}})
+    for idx, cid in enumerate(cards[:8]):
+        card_nid = f"card_{cid}"
+        role = "target_card" if idx == 0 else "syndicate_card"
+        add_node(card_nid, f"Card {cid}", "card", role=role)
+        add_edge(case_id, card_nid, "INVOLVES")
 
-    # 4. Connected Device Profiles
+    # 4. Connected Device Profiles (Hubs)
     devs = case_info.get("connected_device_profiles", [])
-    for idx, dev in enumerate(devs[:2]):
-        dev_label = dev.split("|")[0].strip() if "|" in dev else "Device"
-        dev_id = f"dev_{idx}"
-        nodes.append({"data": {"id": dev_id, "label": dev_label, "type": "device"}})
+    for idx, dev in enumerate(devs[:3]):
+        dev_label = dev.split("|")[0].strip() if "|" in dev else "Hardware Profile"
+        dev_nid = f"dev_{idx}"
+        add_node(dev_nid, dev_label, "device", full_profile=dev)
+        for tid in affected[:2]:
+            add_edge(f"txn_{tid}", dev_nid, "FROM_DEVICE")
         for cid in cards[:4]:
-            edges.append({"data": {"source": dev_id, "target": f"card_{cid}", "label": "HARDWARE_SHARED"}})
+            add_edge(dev_nid, f"card_{cid}", "HARDWARE_SHARED")
 
     # 5. Similar Prior Cases
     prior = case_info.get("similar_prior_cases", [])
     for pc in prior[:3]:
-        nodes.append({"data": {"id": f"hist_{pc}", "label": f"Prior Case {pc}", "type": "prior_case"}})
-        edges.append({"data": {"source": case_id, "target": f"hist_{pc}", "label": "MEMORY_SIMILAR"}})
+        pc_nid = f"hist_{pc}"
+        add_node(pc_nid, f"Prior Case {pc}", "prior_case")
+        add_edge(case_id, pc_nid, "MEMORY_SIMILAR")
 
-    return {"nodes": nodes, "edges": edges}
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "topology": {
+            "ring_depth": 3 if len(cards) >= 2 else 1,
+            "connected_cards_count": len(cards),
+            "connected_devices_count": len(devs),
+            "syndicate_detected": len(cards) >= 2
+        }
+    }
 
 
 @app.post("/api/cases/{case_id}/investigate")

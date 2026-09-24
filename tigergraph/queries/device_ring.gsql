@@ -1,35 +1,68 @@
 // GSQL Query: device_ring
-// Discovers multi-card, multi-customer sharing of a device profile with historical fraud cases
+// Deep-Dive Multi-Hop Traversal (up to 3 hops)
+// Discovers multi-card, multi-customer sharing of device profiles, secondary device bridges, and historical fraud cases
 USE GRAPH FraudGraph
 
-CREATE QUERY device_ring(STRING profile_id, STRING as_of_ts) FOR GRAPH FraudGraph {
+CREATE QUERY device_ring(STRING profile_id, STRING as_of_ts, INT max_hops = 3) FOR GRAPH FraudGraph {
     SetAccum<STRING> @@connected_txns;
     SetAccum<STRING> @@connected_cards;
+    SetAccum<STRING> @@connected_devices;
     SetAccum<STRING> @@connected_customers;
     SetAccum<STRING> @@prior_fraud_cases;
+    SumAccum<DOUBLE> @@syndicate_exposure_usd;
 
     Profiles = {DeviceProfile.*};
     TargetProfile = SELECT p FROM Profiles:p WHERE p.profile_id == profile_id;
+    @@connected_devices += profile_id;
 
+    // Hop 1: Transactions using the target device profile
     Txns = SELECT t FROM TargetProfile:p -(DEVICE_USED_IN:e)-> Transaction:t
            WHERE t.ts <= as_of_ts
-           ACCUM @@connected_txns += t.transaction_id;
+           ACCUM @@connected_txns += t.transaction_id,
+                 @@syndicate_exposure_usd += t.amount;
 
+    // Hop 1: Cards making those transactions
     Cards = SELECT cd FROM Txns:t -(MADE_BY:e)-> Card:cd
             ACCUM @@connected_cards += cd.card_id;
 
+    // Hop 1: Customers owning those cards
     Customers = SELECT cust FROM Cards:cd -(OWNED_BY:e)-> Customer:cust
                 ACCUM @@connected_customers += cust.customer_id;
 
-    Cases = SELECT cc FROM Cards:cd -(HAD_CLOSED_CASE:e)-> ClosedCase:cc
+    // Hop 2: Secondary devices linked to discovered cards
+    IF max_hops >= 2 THEN
+        SecTxns = SELECT t FROM Cards:cd -(MADE:e)-> Transaction:t
+                  WHERE t.ts <= as_of_ts;
+        SecProfiles = SELECT p FROM SecTxns:t -(FROM_DEVICE:e)-> DeviceProfile:p
+                      ACCUM @@connected_devices += p.profile_id;
+
+        // Hop 3: Tertiary cards linked through secondary devices
+        IF max_hops >= 3 THEN
+            TertTxns = SELECT t FROM SecProfiles:p -(DEVICE_USED_IN:e)-> Transaction:t
+                       WHERE t.ts <= as_of_ts
+                       ACCUM @@connected_txns += t.transaction_id,
+                             @@syndicate_exposure_usd += t.amount;
+            TertCards = SELECT cd FROM TertTxns:t -(MADE_BY:e)-> Card:cd
+                        ACCUM @@connected_cards += cd.card_id;
+            TertCusts = SELECT cust FROM TertCards:cd -(OWNED_BY:e)-> Customer:cust
+                        ACCUM @@connected_customers += cust.customer_id;
+        END;
+    END;
+
+    // Traverse historical closed fraud cases associated with any connected card
+    AllCards = SELECT cd FROM Cards:cd;
+    Cases = SELECT cc FROM AllCards:cd -(HAD_CLOSED_CASE:e)-> ClosedCase:cc
             WHERE cc.closed_at <= as_of_ts AND cc.outcome == "confirmed_fraud"
             ACCUM @@prior_fraud_cases += cc.case_id;
 
     PRINT profile_id, 
           @@connected_txns.size() AS txn_count,
           @@connected_cards.size() AS card_count,
+          @@connected_devices.size() AS device_count,
           @@connected_customers.size() AS customer_count,
+          @@syndicate_exposure_usd AS syndicate_exposure_usd,
           @@connected_cards,
+          @@connected_devices,
           @@connected_customers,
           @@prior_fraud_cases;
 }

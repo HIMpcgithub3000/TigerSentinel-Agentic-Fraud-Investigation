@@ -100,7 +100,7 @@
     "activity_dates": []
   },
   "stop_reason": "Historical customer baseline confirms legitimate recurring/domestic activity.",
-  "tool_calls": 5,
+  "tool_calls": 6,
   "tokens": 1250,
   "latency_s": 0.0
 }

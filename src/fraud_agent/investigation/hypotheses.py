@@ -3,7 +3,7 @@ Hypothesis Engine for Evaluating Competing Fraud Typologies and Contradictions.
 Determines evidence strength, resolves contradictions, and computes calibrated fraud probability.
 """
 
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 from src.fraud_agent.investigation.evidence import EvidenceLedger
 from src.fraud_agent.investigation.patterns import (
     detect_card_testing,
@@ -30,7 +30,8 @@ class HypothesisEngine:
         ledger: EvidenceLedger,
         customer_response: str = "",
         trigger_type: str = "risk_score",
-        trigger_text: str = ""
+        trigger_text: str = "",
+        centrality: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Runs all pattern detectors, adds verified claims to the Evidence Ledger,
@@ -125,6 +126,31 @@ class HypothesisEngine:
                 ref="query:device_ring",
                 entity_ids=[str(flagged_txn.get("device_profile", ""))] + connected_cards,
                 strength=undoc_score,
+                supports=["undocumented"]
+            )
+            # Add deep multi-hop syndicate topology evidence if multi-hop cards or devices discovered
+            if device_ring.get("is_syndicate") and len(connected_cards) >= 2:
+                num_c = len(connected_cards)
+                num_d = len(device_ring.get("connected_devices", []))
+                synd_exp = float(device_ring.get("syndicate_exposure_usd", 0.0))
+                ledger.add_evidence(
+                    claim=f"Deep multi-hop graph traversal confirmed an organized syndicate ring linking {num_c} cards across {num_d} hardware profiles with total exposure of ${synd_exp:.2f}.",
+                    source="graph",
+                    ref="query:device_ring:multi_hop",
+                    entity_ids=connected_cards[:5] + device_ring.get("connected_devices", [])[:2],
+                    strength=0.95,
+                    supports=["undocumented"]
+                )
+
+        # Graph Centrality & Hub Anomaly Evidence
+        if centrality and centrality.get("is_hub_anomaly"):
+            hub_degree = centrality.get("num_cards_sharing", 0)
+            ledger.add_evidence(
+                claim=f"Graph centrality analysis flagged hardware profile as high-degree hub shared across {hub_degree} distinct payment cards.",
+                source="graph",
+                ref="algorithm:degree_and_connectivity_centrality",
+                entity_ids=[str(flagged_txn.get("device_profile", "")), card_id],
+                strength=0.90,
                 supports=["undocumented"]
             )
 
