@@ -5,7 +5,7 @@
     "verdict": "fraud",
     "fraud_probability": 0.86,
     "pattern": "undocumented",
-    "pattern_description": "Syndicate device ring discovered: device profile is shared across 65 cards and 65 customers, with 0 prior confirmed fraud cases in neighborhood.",
+    "pattern_description": "Syndicate device ring discovered: device profile is shared across 68 cards and 68 customers, with 0 prior confirmed fraud cases in neighborhood.",
     "affected_txn_ids": [
       "3464869"
     ],
@@ -13,6 +13,7 @@
     "connected_card_ids": [
       "C00681-K18803",
       "C00685-K22648",
+      "C00694-K15753",
       "C00750-K16300",
       "C01104-K13791",
       "C01155-K21788",
@@ -44,6 +45,7 @@
       "C06026-K16925",
       "C06220-K21105",
       "C06224-K17503",
+      "C06330-K15680",
       "C06835-K13228",
       "C07076-K22752",
       "C07194-K21898",
@@ -52,17 +54,18 @@
       "C07858-K15913",
       "C07862-K21199",
       "C07867-K22006",
-      "C07987-K11539",
       "C08528-K15774",
       "C08662-K13199",
       "C08793-K10981",
       "C09283-K11223",
+      "C09443-K17494",
       "C09471-K15065",
       "C09666-K20512",
+      "C09719-K18332",
       "C09956-K22105",
       "C10222-K16717",
-      "C10434-K17379",
       "C11000-K16535",
+      "C11190-K20995",
       "C11204-K10148",
       "C11227-K22902",
       "C11413-K20455",
@@ -91,13 +94,13 @@
         ]
       },
       {
-        "claim": "Syndicate device ring discovered: device profile is shared across 65 cards and 65 customers, with 0 prior confirmed fraud cases in neighborhood.",
+        "claim": "Syndicate device ring discovered: device profile is shared across 68 cards and 68 customers, with 0 prior confirmed fraud cases in neighborhood.",
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050",
           "C00681-K18803",
           "C00685-K22648",
+          "C00694-K15753",
           "C00750-K16300",
           "C01104-K13791",
           "C01155-K21788",
@@ -129,6 +132,7 @@
           "C06026-K16925",
           "C06220-K21105",
           "C06224-K17503",
+          "C06330-K15680",
           "C06835-K13228",
           "C07076-K22752",
           "C07194-K21898",
@@ -137,17 +141,18 @@
           "C07858-K15913",
           "C07862-K21199",
           "C07867-K22006",
-          "C07987-K11539",
           "C08528-K15774",
           "C08662-K13199",
           "C08793-K10981",
           "C09283-K11223",
+          "C09443-K17494",
           "C09471-K15065",
           "C09666-K20512",
+          "C09719-K18332",
           "C09956-K22105",
           "C10222-K16717",
-          "C10434-K17379",
           "C11000-K16535",
+          "C11190-K20995",
           "C11204-K10148",
           "C11227-K22902",
           "C11413-K20455",
@@ -160,21 +165,22 @@
           "C12598-K23089",
           "C12682-K11561",
           "C12797-K12513",
-          "C13007-K12255"
+          "C13007-K12255",
+          "Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050"
         ]
       },
       {
-        "claim": "Deep multi-hop graph traversal confirmed an organized syndicate ring linking 65 cards across 102 hardware profiles with total exposure of $11834.88.",
+        "claim": "Deep multi-hop graph traversal confirmed an organized syndicate ring linking 68 cards across 60 hardware profiles with total exposure of $12550.38.",
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
           "C00681-K18803",
           "C00685-K22648",
+          "C00694-K15753",
           "C00750-K16300",
           "C01104-K13791",
-          "C01155-K21788",
-          "LG-H871 | Android 7.0 | firefox | 2672x1440",
-          "Linux | chrome 62.0 | 1366x768"
+          "MacOS | Mac OS X 10_10_5 | chrome 63.0 | 1280x800",
+          "MacOS | Mac OS X 10_10_5 | safari generic | 1280x800"
         ]
       },
       {
@@ -223,12 +229,12 @@
       {
         "action": "FILE_REPORT",
         "route": "L2",
-        "reason": "R6/R9: Shared device ring connects 65 cards across multiple accounts."
+        "reason": "R6/R9: Shared device ring connects 68 cards across multiple accounts."
       },
       {
         "action": "MONITOR_CONNECTED_CARDS",
         "route": "auto",
-        "reason": "R6: Place 65 ring-connected cards under 72h heightened monitoring."
+        "reason": "R6: Place 68 ring-connected cards under 72h heightened monitoring."
       },
       {
         "action": "ESCALATE_TO_ANALYST",
@@ -255,12 +261,12 @@
       {
         "action": "FILE_REPORT",
         "route": "L2",
-        "reason": "R6/R9: Shared device ring connects 65 cards across multiple accounts."
+        "reason": "R6/R9: Shared device ring connects 68 cards across multiple accounts."
       },
       {
         "action": "MONITOR_CONNECTED_CARDS",
         "route": "auto",
-        "reason": "R6: Place 65 ring-connected cards under 72h heightened monitoring."
+        "reason": "R6: Place 68 ring-connected cards under 72h heightened monitoring."
       },
       {
         "action": "ESCALATE_TO_ANALYST",
@@ -273,12 +279,13 @@
   "sar": {
     "file": true,
     "reason": "R2/R6: Confirmed unauthorized activity with exposure > $1,000 or linked to shared multi-card syndicate ring.",
-    "narrative": "On 2016-11-17, transaction 3464869 was executed on card C03042-K1 associated with customer C03042 for the total unauthorized sum of $599.94. The activity was conducted via the online channel utilizing device profile 'Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050'. Internal fraud investigation anchored on this alert identified anomalous behavioral patterns classified as 'undocumented'. Graph relationship analysis revealed this device hardware profile is simultaneously linked to multiple distinct cards, including C00681-K18803, C00685-K22648, C00750-K16300, indicating an organized syndicate ring. Cardholder contacted regarding the transactions denied authorizing the charges and remained in possession of the card. Total verified fraudulent exposure aggregates to $599.94. Card C03042-K1 has been blocked to prevent further loss, connected instruments have been placed under enhanced monitoring, and this report is filed pursuant to regulatory compliance standards under Bank Policy R2 and 31 CFR 1020.320.",
+    "narrative": "On 2016-11-17, transaction 3464869 was executed on card C03042-K1 associated with customer C03042 for the total unauthorized sum of $599.94. The activity was conducted via the online channel utilizing device profile 'Trident/7.0 | Windows 8.1 | ie 11.0 for desktop | 1680x1050'. Internal fraud investigation anchored on this alert identified anomalous behavioral patterns classified as 'undocumented'. Graph relationship analysis revealed this device hardware profile is simultaneously linked to multiple distinct cards, including C00681-K18803, C00685-K22648, C00694-K15753, indicating an organized syndicate ring. Cardholder contacted regarding the transactions denied authorizing the charges and remained in possession of the card. Total verified fraudulent exposure aggregates to $599.94. Card C03042-K1 has been blocked to prevent further loss, connected instruments have been placed under enhanced monitoring, and this report is filed pursuant to regulatory compliance standards under Bank Policy R2 and 31 CFR 1020.320.",
     "subjects": [
       "C03042",
       "C03042-K1",
       "C00681-K18803",
       "C00685-K22648",
+      "C00694-K15753",
       "C00750-K16300",
       "C01104-K13791",
       "C01155-K21788",
@@ -310,6 +317,7 @@
       "C06026-K16925",
       "C06220-K21105",
       "C06224-K17503",
+      "C06330-K15680",
       "C06835-K13228",
       "C07076-K22752",
       "C07194-K21898",
@@ -318,17 +326,18 @@
       "C07858-K15913",
       "C07862-K21199",
       "C07867-K22006",
-      "C07987-K11539",
       "C08528-K15774",
       "C08662-K13199",
       "C08793-K10981",
       "C09283-K11223",
+      "C09443-K17494",
       "C09471-K15065",
       "C09666-K20512",
+      "C09719-K18332",
       "C09956-K22105",
       "C10222-K16717",
-      "C10434-K17379",
       "C11000-K16535",
+      "C11190-K20995",
       "C11204-K10148",
       "C11227-K22902",
       "C11413-K20455",

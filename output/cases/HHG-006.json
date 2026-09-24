@@ -104,7 +104,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Trident/7.0 | Windows 7 | ie 11.0 for desktop | 1920x1080",
           "C00180-K12533",
           "C00450-K17089",
           "C00542-K10907",
@@ -178,7 +177,8 @@
           "C12942-K17736",
           "C12961-K16482",
           "C13266-K18698",
-          "C13410-K19810"
+          "C13410-K19810",
+          "Trident/7.0 | Windows 7 | ie 11.0 for desktop | 1920x1080"
         ]
       },
       {
@@ -186,12 +186,12 @@
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
+          "Android | chrome 61.0 | 1366x768",
           "C00180-K12533",
           "C00450-K17089",
           "C00542-K10907",
           "C00750-K16300",
           "C00768-K14644",
-          "Android | chrome 61.0 | 1366x768",
           "LG-H871 | Android 7.0 | firefox | 2672x1440"
         ]
       },

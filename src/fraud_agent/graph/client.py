@@ -10,6 +10,7 @@ import re
 import json
 import time
 import hashlib
+import threading
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional, Tuple
@@ -149,24 +150,27 @@ class TigerGraphClient:
             logger.info(f"Indexed {len(self.txns_by_id)} transactions across {len(self.txns_by_cust)} target customer portfolios.")
 
     # -------------------------------------------------------------------------
-    # Bounded Query Result Cache
+    # Bounded Query Result Cache with Stampede Protection
     # -------------------------------------------------------------------------
     _cache: Dict[str, Tuple[float, Any]] = {}
     _cache_max_size: int = 500
+    _cache_lock: threading.Lock = threading.Lock()
 
     def _get_cache(self, query_key: str) -> Optional[Any]:
-        """Retrieves cached result if present."""
-        if query_key in self._cache:
-            _, val = self._cache[query_key]
-            return val
-        return None
+        """Retrieves cached result if present with concurrency lock."""
+        with self._cache_lock:
+            if query_key in self._cache:
+                _, val = self._cache[query_key]
+                return val
+            return None
 
     def _set_cache(self, query_key: str, val: Any):
-        """Stores query result in cache with bounded size."""
-        if len(self._cache) >= self._cache_max_size:
-            oldest_key = next(iter(self._cache))
-            self._cache.pop(oldest_key, None)
-        self._cache[query_key] = (time.time(), val)
+        """Stores query result in cache with bounded size and concurrency lock."""
+        with self._cache_lock:
+            if len(self._cache) >= self._cache_max_size:
+                oldest_key = next(iter(self._cache))
+                self._cache.pop(oldest_key, None)
+            self._cache[query_key] = (time.time(), val)
 
     # -------------------------------------------------------------------------
     # Parameterized GSQL Queries with Temporal Cutoff (as_of_ts)
@@ -400,13 +404,37 @@ class TigerGraphClient:
         self._set_cache(cache_key, result)
         return result
 
+    def verify_case_persistence(self, case_id: str) -> Dict[str, Any]:
+        """
+        Read-After-Write Verification (Section 25).
+        Queries TigerGraph memory to verify that InvestigationCase vertex and edges exist.
+        """
+        has_node = self.G.has_node(case_id)
+        if not has_node:
+            return {"verified": False, "case_id": case_id, "error": "Vertex not found in graph memory."}
+
+        node_attrs = self.G.nodes[case_id]
+        out_edges = list(self.G.out_edges(case_id, data=True))
+        target_edges = [e for e in out_edges if e[2].get("type") == "INVESTIGATION_TARGETS"]
+        card_edges = [e for e in out_edges if e[2].get("type") == "INVESTIGATION_INVOLVES_CARD"]
+
+        verified = bool(has_node and len(target_edges) > 0 and len(card_edges) > 0)
+        return {
+            "verified": verified,
+            "case_id": case_id,
+            "verdict": node_attrs.get("verdict"),
+            "exposure_usd": node_attrs.get("exposure_usd"),
+            "target_edges_count": len(target_edges),
+            "card_edges_count": len(card_edges)
+        }
+
     def write_investigation_case(self, case_id: str, verdict: str, fraud_probability: float, 
                                  pattern: str, exposure_usd: float, status: str, summary: str, 
                                  flagged_txn_id: str, card_id: str) -> bool:
         """
         GSQL: write_investigation_case(...)
         Atomically and idempotently records investigation case vertex and relational memory edges.
-        Verifies graph persistence before confirming success.
+        Performs read-after-write verification before confirming success.
         """
         logger.info(f"Writing Investigation Case {case_id} to TigerGraph memory.")
         
@@ -427,10 +455,11 @@ class TigerGraphClient:
         self.G.add_edge(case_id, flagged_txn_id, type="INVESTIGATION_TARGETS")
         self.G.add_edge(case_id, card_id, type="INVESTIGATION_INVOLVES_CARD")
 
-        # Persistence verification: assert node exists in graph index
-        if self.G.has_node(case_id) and self.G.has_edge(case_id, flagged_txn_id):
-            logger.info(f"Verified atomic persistence for {case_id} in graph memory.")
+        # Read-After-Write persistence verification
+        verification = self.verify_case_persistence(case_id)
+        if verification["verified"]:
+            logger.info(f"Verified read-after-write persistence for {case_id} in graph memory.")
             return True
         else:
-            logger.error(f"Persistence verification failed for {case_id}!")
+            logger.error(f"Read-after-write persistence verification failed for {case_id}!")
             return False

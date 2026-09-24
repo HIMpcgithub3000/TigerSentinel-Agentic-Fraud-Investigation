@@ -102,7 +102,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Windows | Windows 10 | edge 16.0 | 1366x768",
           "C00416-K15996",
           "C00750-K16300",
           "C00854-K15058",
@@ -174,7 +173,8 @@
           "C12897-K17704",
           "C12942-K17736",
           "C12983-K14302",
-          "C13015-K18959"
+          "C13015-K18959",
+          "Windows | Windows 10 | edge 16.0 | 1366x768"
         ]
       },
       {
@@ -354,5 +354,5 @@
   "stop_reason": "Evidence provides sufficient multi-hop graph support under bank policy.",
   "tool_calls": 6,
   "tokens": 1250,
-  "latency_s": 0.0
+  "latency_s": 0.01
 }

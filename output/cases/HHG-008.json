@@ -80,7 +80,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "chrome 66.0",
           "C00294-K11260",
           "C01521-K15986",
           "C01740-K14163",
@@ -130,7 +129,8 @@
           "C13171-K10114",
           "C13349-K10296",
           "C13407-K21245",
-          "C13447-K10023"
+          "C13447-K10023",
+          "chrome 66.0"
         ]
       },
       {
@@ -138,13 +138,13 @@
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
+          "0PM92 | chrome 64.0 for android",
+          "2PYB2 | chrome 63.0 for android",
           "C00294-K11260",
           "C01521-K15986",
           "C01740-K14163",
           "C01890-K10082",
-          "C02147-K13864",
-          "0PM92 | chrome 64.0 for android",
-          "2PYB2 | chrome 63.0 for android"
+          "C02147-K13864"
         ]
       },
       {
@@ -294,5 +294,5 @@
   "stop_reason": "Customer direct dispute provides initial testimony; graph corroboration assessed.",
   "tool_calls": 6,
   "tokens": 1250,
-  "latency_s": 0.05
+  "latency_s": 0.03
 }

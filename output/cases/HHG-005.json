@@ -101,7 +101,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "iOS Device | iOS 9.3.5 | mobile safari 9.0 | 1024x768",
           "C00329-K13169",
           "C00450-K17089",
           "C00750-K16300",
@@ -172,7 +171,8 @@
           "C12961-K16482",
           "C13058-K15632",
           "C13067-K13711",
-          "C13440-K22914"
+          "C13440-K22914",
+          "iOS Device | iOS 9.3.5 | mobile safari 9.0 | 1024x768"
         ]
       },
       {
@@ -180,13 +180,13 @@
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
+          "Android | chrome 61.0 | 1366x768",
+          "Android | chrome 63.0 | 1280x720",
           "C00329-K13169",
           "C00450-K17089",
           "C00750-K16300",
           "C00854-K15058",
-          "C01104-K13791",
-          "Android | chrome 61.0 | 1366x768",
-          "Android | chrome 63.0 | 1280x720"
+          "C01104-K13791"
         ]
       },
       {

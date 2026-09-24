@@ -95,7 +95,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Windows | Windows 10 | chrome 65.0 | 1920x1080",
           "C00685-K22648",
           "C00694-K15753",
           "C00750-K16300",
@@ -160,7 +159,8 @@
           "C12682-K11561",
           "C12797-K12513",
           "C13007-K12255",
-          "C13328-K18090"
+          "C13328-K18090",
+          "Windows | Windows 10 | chrome 65.0 | 1920x1080"
         ]
       },
       {
@@ -333,5 +333,5 @@
   "stop_reason": "Evidence provides sufficient multi-hop graph support under bank policy.",
   "tool_calls": 6,
   "tokens": 1250,
-  "latency_s": 0.0
+  "latency_s": 0.01
 }

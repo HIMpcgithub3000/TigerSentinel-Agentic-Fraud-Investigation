@@ -73,7 +73,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Windows | edge 16.0",
           "C00005-K17978",
           "C01154-K18031",
           "C01525-K22351",
@@ -116,7 +115,8 @@
           "C11847-K21463",
           "C11919-K22374",
           "C11923-K21363",
-          "C13171-K10114"
+          "C13171-K10114",
+          "Windows | edge 16.0"
         ]
       },
       {
@@ -124,13 +124,13 @@
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
+          "0PM92 | chrome 64.0 for android",
+          "2PYB2 | chrome 63.0 for android",
           "C00005-K17978",
           "C01154-K18031",
           "C01525-K22351",
           "C01659-K10772",
-          "C02266-K17608",
-          "0PM92 | chrome 64.0 for android",
-          "2PYB2 | chrome 63.0 for android"
+          "C02266-K17608"
         ]
       },
       {

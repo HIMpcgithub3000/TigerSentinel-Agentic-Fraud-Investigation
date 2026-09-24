@@ -73,7 +73,6 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "Windows | chrome 66.0",
           "C00523-K16847",
           "C00788-K23146",
           "C00927-K10394",
@@ -116,7 +115,8 @@
           "C12987-K15946",
           "C13147-K18215",
           "C13171-K10114",
-          "C13407-K21245"
+          "C13407-K21245",
+          "Windows | chrome 66.0"
         ]
       },
       {
@@ -124,13 +124,13 @@
         "source": "graph",
         "ref": "query:device_ring:multi_hop",
         "entity_ids": [
+          "0PM92 | chrome 64.0 for android",
+          "2PYB2 | chrome 63.0 for android",
           "C00523-K16847",
           "C00788-K23146",
           "C00927-K10394",
           "C01525-K22351",
-          "C02228-K10848",
-          "0PM92 | chrome 64.0 for android",
-          "2PYB2 | chrome 63.0 for android"
+          "C02228-K10848"
         ]
       },
       {
@@ -295,5 +295,5 @@
   "stop_reason": "Evidence provides sufficient multi-hop graph support under bank policy.",
   "tool_calls": 6,
   "tokens": 1250,
-  "latency_s": 0.06
+  "latency_s": 0.07
 }

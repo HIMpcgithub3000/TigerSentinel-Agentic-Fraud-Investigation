@@ -27,8 +27,8 @@
         "source": "graph",
         "ref": "query:customer_baseline",
         "entity_ids": [
-          "3530164",
-          "330.0"
+          "330.0",
+          "3530164"
         ]
       },
       {

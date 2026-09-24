@@ -35,26 +35,26 @@
         "source": "graph",
         "ref": "query:device_ring",
         "entity_ids": [
-          "SM-G610F Build/NRD90M | chrome 66.0 for android",
-          "C03938-K19805",
-          "C05595-K18042",
-          "C08106-K21429",
-          "C11923-K21363",
-          "C13171-K10114"
-        ]
-      },
-      {
-        "claim": "Deep multi-hop graph traversal confirmed an organized syndicate ring linking 5 cards across 1561 hardware profiles with total exposure of $4626.00.",
-        "source": "graph",
-        "ref": "query:device_ring:multi_hop",
-        "entity_ids": [
           "C03938-K19805",
           "C05595-K18042",
           "C08106-K21429",
           "C11923-K21363",
           "C13171-K10114",
+          "SM-G610F Build/NRD90M | chrome 66.0 for android"
+        ]
+      },
+      {
+        "claim": "Deep multi-hop graph traversal confirmed an organized syndicate ring linking 5 cards across 1561 hardware profiles with total exposure of $4211.56.",
+        "source": "graph",
+        "ref": "query:device_ring:multi_hop",
+        "entity_ids": [
           "0PM92 | chrome 64.0 for android",
-          "2PYB2 | chrome 63.0 for android"
+          "2PYB2 | chrome 63.0 for android",
+          "C03938-K19805",
+          "C05595-K18042",
+          "C08106-K21429",
+          "C11923-K21363",
+          "C13171-K10114"
         ]
       },
       {
@@ -159,5 +159,5 @@
   "stop_reason": "Customer direct dispute provides initial testimony; graph corroboration assessed.",
   "tool_calls": 6,
   "tokens": 1250,
-  "latency_s": 0.23
+  "latency_s": 0.22
 }
