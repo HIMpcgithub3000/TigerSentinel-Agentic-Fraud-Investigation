@@ -103,6 +103,7 @@ export default function LiveInvestigationModal({ caseId, onClose, onComplete }) 
             </div>
           </div>
           <button
+            id="close-investigation-x"
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
           >
@@ -185,6 +186,7 @@ export default function LiveInvestigationModal({ caseId, onClose, onComplete }) 
               </button>
             )}
             <button
+              id="close-investigation-btn"
               onClick={onClose}
               className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-md"
             >

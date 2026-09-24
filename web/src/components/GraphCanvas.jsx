@@ -135,6 +135,22 @@ export default function GraphCanvas({ graphData }) {
       layout: getLayoutConfig(layoutName)
     });
 
+    // Ensure Cytoscape recalculates container dimensions after DOM paint
+    const timer = setTimeout(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        cyRef.current.fit(null, 30);
+      }
+    }, 100);
+
+    const handleWindowResize = () => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        cyRef.current.fit(null, 30);
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
+
     cyRef.current.on('tap', 'node', (evt) => {
       const node = evt.target;
       setSelectedEntity(node.data());
@@ -147,6 +163,8 @@ export default function GraphCanvas({ graphData }) {
     });
 
     return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleWindowResize);
       if (cyRef.current) {
         cyRef.current.destroy();
       }

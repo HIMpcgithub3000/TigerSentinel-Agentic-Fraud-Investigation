@@ -7,7 +7,7 @@ export default function SyndicateBanner({ connectedCards, connectedDevices, expo
   if (!connectedCards || connectedCards.length < 2) return null;
 
   return (
-    <div className="bg-gradient-to-r from-purple-950/40 via-pink-950/30 to-purple-950/40 border border-purple-500/40 rounded-2xl p-4 shadow-xl">
+    <div id="syndicate-banner" className="bg-gradient-to-r from-purple-950/40 via-pink-950/30 to-purple-950/40 border border-purple-500/40 rounded-2xl p-4 shadow-xl">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/50 flex items-center justify-center text-purple-400 shrink-0 shadow-lg shadow-purple-950/50">

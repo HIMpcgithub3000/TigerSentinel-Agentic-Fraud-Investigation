@@ -42,6 +42,7 @@ export default function SARModal({ sar, caseId, onClose }) {
             </div>
           </div>
           <button
+            id="close-sar-x"
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
           >
@@ -164,6 +165,7 @@ export default function SARModal({ sar, caseId, onClose }) {
           </span>
           <div className="flex items-center gap-2">
             <button
+              id="close-sar-btn"
               onClick={onClose}
               className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-lg transition"
             >

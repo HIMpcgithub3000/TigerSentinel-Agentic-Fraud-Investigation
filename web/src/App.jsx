@@ -156,6 +156,7 @@ export default function App() {
             return (
               <div
                 key={c.case_id}
+                data-case-id={c.case_id}
                 onClick={() => setSelectedCaseId(c.case_id)}
                 className={`p-3 cursor-pointer transition flex items-center justify-between group ${
                   isSelected 
@@ -230,6 +231,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             {caseDetails?.sar?.file && (
               <button
+                id="view-sar-btn"
                 onClick={() => setShowSAR(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/40 rounded-lg text-xs font-semibold transition cursor-pointer shadow-sm active:scale-95"
               >
@@ -237,6 +239,7 @@ export default function App() {
               </button>
             )}
             <button
+              id="run-investigation-btn"
               onClick={() => setShowRunner(true)}
               className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold transition shadow-md cursor-pointer active:scale-95"
             >
@@ -325,7 +328,7 @@ export default function App() {
                   )}
                 </div>
               </div>
-              <div className="h-88 w-full">
+              <div className="h-[360px] w-full">
                 <GraphCanvas graphData={graphData} />
               </div>
             </div>
@@ -335,6 +338,7 @@ export default function App() {
               {/* Tab Navigation */}
               <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-5 text-xs font-bold">
                 <button
+                  data-tab="actions"
                   onClick={() => setActiveTab('actions')}
                   className={`py-3.5 px-4 border-b-2 transition cursor-pointer ${
                     activeTab === 'actions'
@@ -345,6 +349,7 @@ export default function App() {
                   Dual-Phase Next-Best Actions
                 </button>
                 <button
+                  data-tab="evidence"
                   onClick={() => setActiveTab('evidence')}
                   className={`py-3.5 px-4 border-b-2 transition cursor-pointer flex items-center gap-2 ${
                     activeTab === 'evidence'
@@ -358,6 +363,7 @@ export default function App() {
                   </span>
                 </button>
                 <button
+                  data-tab="summary"
                   onClick={() => setActiveTab('summary')}
                   className={`py-3.5 px-4 border-b-2 transition cursor-pointer ${
                     activeTab === 'summary'
@@ -368,6 +374,7 @@ export default function App() {
                   Analyst Summary & Reasoning
                 </button>
                 <button
+                  data-tab="trace"
                   onClick={() => setActiveTab('trace')}
                   className={`py-3.5 px-4 border-b-2 transition cursor-pointer ${
                     activeTab === 'trace'
@@ -397,7 +404,7 @@ export default function App() {
                   <div className="space-y-4 text-xs leading-relaxed text-slate-300">
                     <div className="p-4 bg-slate-900/70 rounded-xl border border-slate-800">
                       <h4 className="text-[11px] uppercase font-bold text-slate-400 mb-2">Investigation Synthesis</h4>
-                      <p className="text-slate-100 leading-relaxed text-sm font-sans">{cInfo?.summary}</p>
+                      <p id="investigation-synthesis-text" className="text-slate-100 leading-relaxed text-sm font-sans">{cInfo?.summary}</p>
                     </div>
                     {cInfo?.pattern_description && (
                       <div className="p-4 bg-purple-950/20 rounded-xl border border-purple-900/40">
@@ -413,7 +420,7 @@ export default function App() {
                 )}
 
                 {activeTab === 'trace' && (
-                  <div className="space-y-3 font-mono text-xs">
+                  <div id="langgraph-trace-container" className="space-y-3 font-mono text-xs">
                     <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                       <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2">
                         <span>Workflow State Machine Execution Log</span>

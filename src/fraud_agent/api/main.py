@@ -172,10 +172,12 @@ def re_investigate_case(case_id: str):
     case_input = match.iloc[0].to_dict()
     res = agent.investigate(case_input)
 
-    # Save to disk
+    # Save to disk atomically
     out_path = f"output/cases/{case_id}.json"
-    with open(out_path, "w") as f:
+    temp_path = f"output/cases/{case_id}.tmp.json"
+    with open(temp_path, "w") as f:
         f.write(res.model_dump_json(indent=2))
+    os.replace(temp_path, out_path)
 
     return res.model_dump()
 
