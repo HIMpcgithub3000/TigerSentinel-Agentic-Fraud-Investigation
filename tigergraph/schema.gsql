@@ -1,12 +1,8 @@
 // TigerGraph Schema for Agentic Fraud Investigation (FraudGraph)
 // Hackathon: TigerGraph x Hacker House Goa 2026
 
-CREATE GRAPH FraudGraph ()
-
-USE GRAPH FraudGraph
-
 // -------------------------------------------------------------
-// Vertices
+// Vertices (Global Types)
 // -------------------------------------------------------------
 
 CREATE VERTEX Customer (
@@ -91,3 +87,9 @@ CREATE DIRECTED EDGE CONNECTED_TO (FROM ClosedCase, TO Card) WITH REVERSE_EDGE="
 CREATE DIRECTED EDGE INVESTIGATION_TARGETS (FROM InvestigationCase, TO Transaction) WITH REVERSE_EDGE="INVESTIGATED_IN";
 CREATE DIRECTED EDGE INVESTIGATION_INVOLVES_CARD (FROM InvestigationCase, TO Card) WITH REVERSE_EDGE="CARD_IN_INVESTIGATION";
 CREATE DIRECTED EDGE INVESTIGATION_CITES_CASE (FROM InvestigationCase, TO ClosedCase) WITH REVERSE_EDGE="CITED_BY_INVESTIGATION";
+
+// -------------------------------------------------------------
+// Graph Definition
+// -------------------------------------------------------------
+
+CREATE GRAPH FraudGraph (*)

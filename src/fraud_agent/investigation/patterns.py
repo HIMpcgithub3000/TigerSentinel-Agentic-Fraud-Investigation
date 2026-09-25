@@ -3,9 +3,8 @@ Deterministic Pattern Detectors for the 5 Known Fraud Typologies,
 Undocumented Emerging Typologies, and Legitimate Baseline Behaviors.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime, timedelta
-import pandas as pd
+from typing import Dict, Any, List, Tuple
+from datetime import datetime
 
 
 def detect_card_testing(

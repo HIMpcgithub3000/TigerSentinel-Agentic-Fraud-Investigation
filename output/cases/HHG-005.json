@@ -190,6 +190,15 @@
         ]
       },
       {
+        "claim": "Graph centrality analysis flagged hardware profile as high-degree hub shared across 71 distinct payment cards.",
+        "source": "graph",
+        "ref": "algorithm:degree_and_connectivity_centrality",
+        "entity_ids": [
+          "C02923-K22606",
+          "iOS Device | iOS 9.3.5 | mobile safari 9.0 | 1024x768"
+        ]
+      },
+      {
         "claim": "Historical closed case CC-2400 confirmed fraud with matching pattern (account_takeover).",
         "source": "graph",
         "ref": "query:similar_closed_cases",
@@ -211,6 +220,14 @@
         "ref": "query:similar_closed_cases",
         "entity_ids": [
           "CC-2857"
+        ]
+      },
+      {
+        "claim": "Bank Policy R6/R9 & 31 CFR § 1020.320: Undocumented multi-card syndicate ring mandates protective card blocks, enhanced monitoring, and FinCEN SAR filing.",
+        "source": "document",
+        "ref": "policy:R6_R9:regulatory_31_CFR_1020_320",
+        "entity_ids": [
+          "C02923-K22606"
         ]
       }
     ],
@@ -377,7 +394,7 @@
     ]
   },
   "stop_reason": "Evidence provides sufficient multi-hop graph support under bank policy.",
-  "tool_calls": 6,
+  "tool_calls": 7,
   "tokens": 1250,
   "latency_s": 0.01
 }

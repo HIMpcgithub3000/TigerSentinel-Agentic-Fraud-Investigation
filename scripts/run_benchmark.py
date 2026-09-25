@@ -5,7 +5,6 @@ Processes all 20 benchmark cases (HHG-001 to HHG-020) and exports verified JSON 
 
 import os
 import sys
-import json
 import time
 import argparse
 
@@ -25,7 +24,7 @@ def run_all_cases(output_dir: str = "output/cases", case_pack_path: str = "data/
     os.makedirs(output_dir, exist_ok=True)
     df_pack = pd.read_csv(case_pack_path)
 
-    console.print(f"[bold cyan]Initializing TigerGraph Agentic Investigator...[/bold cyan]")
+    console.print("[bold cyan]Initializing TigerGraph Agentic Investigator...[/bold cyan]")
     t0 = time.time()
     agent = FraudInvestigationAgent()
     console.print(f"[green]Agent initialized in {time.time() - t0:.2f}s.[/green]\n")

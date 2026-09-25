@@ -21,6 +21,14 @@ class EvidenceItem(BaseModel):
     supports: List[str] = Field(default_factory=list)
     contradicts: List[str] = Field(default_factory=list)
     timestamp: Optional[str] = None
+    raw_claim: Optional[str] = None
+    sanitized_claim: Optional[str] = None
+    injection_detected: bool = False
+    source_trust: str = "AUTHORITATIVE_GRAPH"
+    item_hash: Optional[str] = None
+    layer: int = 1
+    confidence: float = 0.85
+    provenance_query: Optional[str] = None
 
 
 # --- Action and Governance Models ---
@@ -116,6 +124,8 @@ class InvestigationState(TypedDict, total=False):
     card_txns_window: List[Dict[str, Any]]
     device_ring_info: Dict[str, Any]
     similar_cases_found: List[Dict[str, Any]]
+    graph_centrality: Optional[Dict[str, Any]]
+    policy_context: Optional[Dict[str, Any]]
     
     # Evidence Ledger & Hypotheses
     evidence_ledger: List[EvidenceItem]

@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  caseguard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: caseguard-fraud-agent:latest
+    container_name: caseguard-platform
+    ports:
+      - "8787:8787"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src:/app
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8787
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8787/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

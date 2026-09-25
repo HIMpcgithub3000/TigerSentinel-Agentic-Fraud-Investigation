@@ -3,10 +3,8 @@ Formal Tool Registry and Tool Governance Plane for CaseGuard Agent.
 Prevents unconstrained LLM execution and enforces strict permissions, timeouts, and state constraints.
 """
 
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-import time
-import hashlib
 import logging
 
 logger = logging.getLogger(__name__)

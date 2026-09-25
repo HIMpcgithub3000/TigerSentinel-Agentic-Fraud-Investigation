@@ -4,7 +4,6 @@ Produces fully grounded regulatory filings strictly adhering to FinCEN narrative
 """
 
 from typing import Dict, Any, List
-from src.fraud_agent.models import SARReport
 
 
 class SAREngine:

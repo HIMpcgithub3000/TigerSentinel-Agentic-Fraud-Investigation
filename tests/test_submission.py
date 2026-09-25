@@ -1,8 +1,10 @@
-import pytest
 import os
 import json
 import glob
-from scripts.validate_submission import validate_file, validate_submission_dir
+import pytest
+from scripts.validate_submission import validate_submission_dir, validate_file
+
+BENCHMARK_CASES = [f"HHG-{i:03d}" for i in range(1, 21)]
 
 def test_all_20_benchmark_files_exist():
     files = glob.glob("output/cases/HHG-*.json")
@@ -12,11 +14,16 @@ def test_benchmark_validation_suite():
     success = validate_submission_dir("output/cases")
     assert success is True
 
-def test_individual_case_fields():
-    with open("output/cases/HHG-001.json") as f:
-        c1 = json.load(f)
-    assert c1["case_id"] == "HHG-001"
-    assert c1["case"]["verdict"] in ["fraud", "legitimate", "uncertain"]
-    assert len(c1["case"]["evidence"]) > 0
-    assert c1["case"]["written_to_graph"] is True
-    assert c1["case"]["graph_case_id"] != ""
+@pytest.mark.parametrize("case_id", BENCHMARK_CASES)
+def test_benchmark_case(case_id):
+    filepath = f"output/cases/{case_id}.json"
+    assert os.path.exists(filepath), f"File {filepath} does not exist"
+    errors = validate_file(filepath)
+    assert not errors, f"Validation errors in {case_id}: {errors}"
+    with open(filepath) as f:
+        data = json.load(f)
+    assert data["case_id"] == case_id
+    assert data["case"]["verdict"] in ["fraud", "legitimate", "uncertain"]
+    assert len(data["case"]["evidence"]) > 0
+    assert data["case"]["written_to_graph"] is True
+

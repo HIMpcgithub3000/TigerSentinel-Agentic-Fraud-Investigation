@@ -20,8 +20,7 @@ import sys
 import json
 import glob
 import numpy as np
-from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 
@@ -62,6 +61,9 @@ def evaluate_benchmark_quality(output_dir: str = "output/cases") -> Dict[str, An
         for ev in evidence_list:
             if not ev.get("claim"):
                 unsupported_claims += 1
+            ev_ts = ev.get("timestamp")
+            if ev_ts and ev_ts > cutoff_str:
+                temporal_violations += 1
 
         # 2. SAR Statutory Agreement
         sar_file = data.get("sar", {}).get("file", False)

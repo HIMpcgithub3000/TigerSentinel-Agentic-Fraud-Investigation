@@ -7,18 +7,18 @@ uncertainty gating, dual-phase actions, SAR compliance, and TigerGraph memory wr
 import time
 import logging
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional, Literal
 from concurrent.futures import ThreadPoolExecutor
 from langgraph.graph import StateGraph, END
 
 from src.fraud_agent.models import InvestigationState, BenchmarkCaseOutput, CaseRecord, NextBestActions, SARReport, EvidenceRequest
 from src.fraud_agent.graph.client import TigerGraphClient
-from src.fraud_agent.agent.tools import ToolRegistry
 from src.fraud_agent.investigation.evidence import EvidenceLedger
 from src.fraud_agent.investigation.hypotheses import HypothesisEngine
 from src.fraud_agent.investigation.sufficiency import SufficiencyEngine
 from src.fraud_agent.policy.engine import PolicyEngine
 from src.fraud_agent.policy.sar import SAREngine
+from src.fraud_agent.mcp.session import TigerGraphMCPSession
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +26,17 @@ logger = logging.getLogger(__name__)
 class FraudInvestigationAgent:
     """
     Autonomous Agentic Fraud Investigator powered by TigerGraph and LangGraph.
+    Accesses graph capabilities strictly through the governed TigerGraph MCP layer.
     """
 
     def __init__(self, tg_client: Optional[TigerGraphClient] = None):
         self.tg = tg_client or TigerGraphClient()
+        self.mcp = TigerGraphMCPSession.get_session(tg_client=self.tg)
         self.workflow = self._build_graph()
 
-    def _build_graph(self) -> StateGraph:
+    def _build_graph(self) -> Any:
         """Constructs the LangGraph state machine."""
-        workflow = StateGraph(InvestigationState)
+        workflow: Any = StateGraph(InvestigationState)  # type: ignore
 
         # Define Graph Nodes
         workflow.add_node("intake", self._node_intake)
@@ -88,40 +90,48 @@ class FraudInvestigationAgent:
         }
 
     def _node_retrieve_graph_context(self, state: InvestigationState) -> Dict[str, Any]:
-        """Node 2: Executes GSQL queries in parallel with temporal cutoff (as_of_ts)."""
-        logger.info("--- [Node: Retrieve Graph Context (Parallel Plane)] ---")
+        """Node 2: Executes GSQL queries via TigerGraph MCP Session in parallel with temporal cutoff (as_of_ts)."""
+        logger.info("--- [Node: Retrieve Graph Context (TigerGraph MCP Parallel Plane)] ---")
+        print("[LangGraph] Node: retrieve_graph_context")
         tid = state["flagged_txn_id"]
         cid = state["customer_id"]
         card_id = state["card_id"]
         cutoff_ts = state.get("opened_at", "2016-12-05 00:00:00")
 
-        # 1. Flagged transaction details
+        # 1. MCP Graph Schema Discovery
+        self.mcp.get_graph_schema()
+
+        # 2. Flagged transaction details
         txn_details = self.tg.get_transaction(tid) or {
             "TransactionID": tid, "TransactionAmt": 100.0, "channel": "online",
             "card_id": card_id, "customer_id": cid, "device_profile": "Unknown Device"
         }
         dev_profile = txn_details.get("device_profile", "")
 
-        # 2. Parallel Graph Retrieval Plane via ThreadPoolExecutor (Section 5.1)
+        # 3. Parallel Graph Retrieval Plane via TigerGraph MCP Session (Phase 2 & 3)
         t0 = time.time()
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            fut_baseline = executor.submit(self.tg.customer_baseline, cid, cutoff_ts)
-            fut_window = executor.submit(self.tg.card_window, card_id, 48, cutoff_ts)
-            fut_ring = executor.submit(self.tg.device_ring, dev_profile, cutoff_ts, 3)
-            fut_cases = executor.submit(self.tg.similar_closed_cases, "", card_id, None, cutoff_ts, 3)
-            fut_centrality = executor.submit(self.tg.analyze_graph_centrality, card_id, dev_profile, cutoff_ts)
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            fut_baseline = executor.submit(self.mcp.run_installed_query, "customer_baseline", {"c_id": cid, "as_of_ts": cutoff_ts})
+            fut_window = executor.submit(self.mcp.run_installed_query, "card_window", {"card_id": card_id, "hours": 48, "as_of_ts": cutoff_ts})
+            fut_ring = executor.submit(self.mcp.run_installed_query, "device_ring", {"profile_id": dev_profile, "as_of_ts": cutoff_ts, "max_hops": 3})
+            fut_cases = executor.submit(self.mcp.run_installed_query, "similar_closed_cases", {"pattern": "", "card_id": card_id, "as_of_ts": cutoff_ts, "top_k": 3})
+            fut_centrality = executor.submit(self.mcp.run_installed_query, "graph_centrality", {"card_id": card_id, "profile_id": dev_profile, "as_of_ts": cutoff_ts})
+            # GraphRAG Layer 2: Institutional knowledge retrieval via MCP
+            fut_policy = executor.submit(self.mcp.retrieve_policy_context, "", 0.0, "medium")
 
             baseline = fut_baseline.result()
             window = fut_window.result()
             device_ring = fut_ring.result()
             similar_cases = fut_cases.result()
             centrality = fut_centrality.result()
+            policy_context = fut_policy.result()
         retrieval_ms = round((time.time() - t0) * 1000, 2)
 
         trace = list(state.get("tool_trace", []))
         trace.append({
-            "step": 2, "action": "tigergraph_parallel_retrieval",
-            "queries": ["customer_baseline", "card_window", "device_ring", "similar_closed_cases", "graph_centrality"],
+            "step": 2, "action": "tigergraph_mcp_parallel_retrieval",
+            "mcp_tools": ["tigergraph__get_graph_schema", "tigergraph__run_installed_query", "tigergraph__retrieve_policy_context"],
+            "queries": ["customer_baseline", "card_window", "device_ring", "similar_closed_cases", "graph_centrality", "policy_context"],
             "retrieval_latency_ms": retrieval_ms,
             "status": "SUCCESS"
         })
@@ -133,8 +143,9 @@ class FraudInvestigationAgent:
             "device_ring_info": device_ring,
             "similar_cases_found": similar_cases,
             "graph_centrality": centrality,
+            "policy_context": policy_context,
             "tool_trace": trace,
-            "tool_calls_count": state.get("tool_calls_count", 1) + 5
+            "tool_calls_count": state.get("tool_calls_count", 1) + 6
         }
 
     def _node_evaluate_hypotheses(self, state: InvestigationState) -> Dict[str, Any]:
@@ -172,6 +183,8 @@ class FraudInvestigationAgent:
             "exposure_usd": eval_res["exposure_usd"],
             "affected_txn_ids": eval_res["affected_txn_ids"],
             "hypotheses_scores": eval_res["hypotheses_scores"],
+            "contradiction_analysis": eval_res.get("contradiction_analysis"),
+            "decision_tree_trace": eval_res.get("decision_tree_trace"),
             "tool_trace": trace
         }
 
@@ -259,7 +272,8 @@ class FraudInvestigationAgent:
         for it in state.get("evidence_ledger", []):
             ledger.items.append(it)
 
-        assumed_resp = state.get("evidence_response", {}).get("response", "")
+        ev_resp = state.get("evidence_response") or {}
+        assumed_resp = ev_resp.get("response", "")
         eval_res = HypothesisEngine.evaluate(
             flagged_txn=state["flagged_txn_details"],
             baseline=state["customer_profile"],
@@ -284,6 +298,8 @@ class FraudInvestigationAgent:
             "fraud_probability": eval_res["fraud_probability"],
             "exposure_usd": eval_res["exposure_usd"],
             "affected_txn_ids": eval_res["affected_txn_ids"],
+            "contradiction_analysis": eval_res.get("contradiction_analysis"),
+            "decision_tree_trace": eval_res.get("decision_tree_trace"),
             "stop_reason": stop_reason
         }
 
@@ -305,6 +321,10 @@ class FraudInvestigationAgent:
             assumed_response=assumed,
             connected_cards=connected_cards
         )
+
+        if len(connected_cards) >= 2 or state["primary_hypothesis"] == "undocumented":
+            print("[PolicyEngine] R6/R9 evaluated")
+        print("[LangGraph] Final action generated")
 
         return {
             "final_actions": final_actions,
@@ -375,7 +395,7 @@ class FraudInvestigationAgent:
             "closed_legitimate" if state["verdict"] == "legitimate" else "escalated"
         )
 
-        written = self.tg.write_investigation_case(
+        written = self.mcp.write_investigation_case(
             case_id=graph_case_id,
             verdict=state["verdict"],
             fraud_probability=state["fraud_probability"],
@@ -389,7 +409,8 @@ class FraudInvestigationAgent:
 
         trace = list(state.get("tool_trace", []))
         trace.append({
-            "step": 5, "action": "tigergraph_idempotent_writeback",
+            "step": 5, "action": "tigergraph_mcp_writeback",
+            "mcp_tool": "tigergraph__write_investigation_case",
             "graph_case_id": graph_case_id,
             "status": "COMMITTED" if written else "FAILED"
         })
@@ -419,7 +440,7 @@ class FraudInvestigationAgent:
             "flagged_txn_id": str(case_input.get("flagged_txn_id", "")),
             "card_id": str(case_input.get("card_id", "")),
             "customer_id": str(case_input.get("customer_id", "")),
-            "risk_score": float(case_input["risk_score"]) if pd.notna(case_input.get("risk_score")) else None,
+            "risk_score": float(case_input["risk_score"]) if (case_input.get("risk_score") is not None and not bool(pd.isna(case_input.get("risk_score")))) else None,
             "tool_calls_count": 0
         }
 
@@ -428,8 +449,10 @@ class FraudInvestigationAgent:
         latency = round(time.time() - start_time, 2)
 
         # Assemble CaseRecord
-        status_val = "closed_fraud" if final_state["verdict"] == "fraud" else (
-            "closed_legitimate" if final_state["verdict"] == "legitimate" else "escalated"
+        status_val: Literal["open", "closed_fraud", "closed_legitimate", "escalated"] = (
+            "closed_fraud" if final_state["verdict"] == "fraud" else (
+                "closed_legitimate" if final_state["verdict"] == "legitimate" else "escalated"
+            )
         )
 
         # Ledger evidence format

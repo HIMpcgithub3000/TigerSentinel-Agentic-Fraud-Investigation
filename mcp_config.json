@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "caseguard-tigergraph": {
+      "command": "python",
+      "args": ["-m", "src.fraud_agent.mcp.server"],
+      "cwd": ".",
+      "env": {
+        "PYTHONPATH": "."
+      },
+      "description": "CaseGuard TigerGraph MCP Server — exposes governed graph operations (customer_baseline, card_window, device_ring, graph_centrality, similar_cases, write_investigation_case) as MCP tools with temporal isolation and ToolRegistry governance enforcement."
+    }
+  }
+}

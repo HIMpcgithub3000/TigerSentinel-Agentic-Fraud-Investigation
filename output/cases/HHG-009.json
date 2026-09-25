@@ -5,17 +5,28 @@
     "verdict": "fraud",
     "fraud_probability": 0.78,
     "pattern": "card_not_present_fraud",
-    "pattern_description": "",
+    "pattern_description": "Card-not-present fraud with post-compromise card testing: customer dispute on $30.02 purchase followed by 9 rapid small-value online transactions totaling $330.12 within 72 hours. Desktop device fingerprint shows partial identity match (id_34=match_status:2) and address mismatch (id_12=NotFound).",
     "affected_txn_ids": [
-      "3581141"
+      "3581141",
+      "3586980",
+      "3587042",
+      "3587043",
+      "3588859",
+      "3588874",
+      "3588876",
+      "3588905",
+      "3588919",
+      "3588950"
     ],
     "first_suspicious_txn_id": "3581141",
     "connected_card_ids": [],
-    "connected_device_profiles": [],
-    "exposure_usd": 30.02,
+    "connected_device_profiles": [
+      "desktop|id_12:NotFound|id_34:match_status:2"
+    ],
+    "exposure_usd": 360.14,
     "evidence": [
       {
-        "claim": "Cardholder has 47 historical transactions averaging $65.22.",
+        "claim": "Cardholder has 56 historical transactions averaging $61.17 over the observed window.",
         "source": "graph",
         "ref": "query:customer_baseline",
         "entity_ids": [
@@ -23,16 +34,77 @@
         ]
       },
       {
-        "claim": "Cardholder explicitly states they did not make this purchase and still has the card.",
+        "claim": "Flagged transaction 3581141 was an online purchase of $30.02 in billing region 203.0 — deviating from customer's primary billing region 330.0 (59% of baseline activity) with an address mismatch (id_12=NotFound).",
+        "source": "graph",
+        "ref": "query:card_window",
+        "entity_ids": [
+          "3581141",
+          "C08299-K1"
+        ]
+      },
+      {
+        "claim": "Identity fingerprint for txn 3581141 shows DeviceType=desktop, id_12=NotFound (address mismatch), id_34=match_status:2 (partial identity match), suggesting compromised credentials.",
+        "source": "graph",
+        "ref": "query:device_ring",
+        "entity_ids": [
+          "3581141",
+          "DVC-desktop"
+        ]
+      },
+      {
+        "claim": "Cardholder explicitly states they did not make this purchase and still has the card, consistent with card-not-present compromise.",
         "source": "customer",
         "ref": "evidence_request:customer_validation",
         "entity_ids": [
-          "C08299-K13026"
+          "C08299"
+        ]
+      },
+      {
+        "claim": "Post-flagging velocity anomaly: 9 additional transactions totaling $330.12 occurred within 72 hours after the flagged purchase, with amounts clustering at $20 and $50 \u2014 classic card testing / enumeration pattern.",
+        "source": "graph",
+        "ref": "query:card_window",
+        "entity_ids": [
+          "3586980",
+          "3587042",
+          "3587043",
+          "3588859",
+          "3588874",
+          "3588876",
+          "3588905",
+          "3588919",
+          "3588950"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-2166 (C01521, card_not_present_new_device, $1,497.42 exposure, 24 txns) shows matching pattern \u2014 customer dispute, online purchases from unrecognized device.",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-2166"
+        ]
+      },
+      {
+        "claim": "Historical closed case CC-2761 (C04034, card_not_present_new_device, $939.48 exposure, 43 txns) shows matching pattern \u2014 rapid online purchase bursts from SM-A510M device.",
+        "source": "graph",
+        "ref": "query:similar_closed_cases",
+        "entity_ids": [
+          "CC-2761"
+        ]
+      },
+      {
+        "claim": "Bank Policy R2: Customer-reported unauthorized purchase triggers mandatory card block and case creation when cardholder denies authorization.",
+        "source": "document",
+        "ref": "policy:R2",
+        "entity_ids": [
+          "C08299-K1"
         ]
       }
     ],
-    "similar_prior_cases": [],
-    "summary": "Investigation of flagged transaction 3581141 on card C08299-K1 identified card not present fraud with assessed fraud probability of 0.78. Activity involves unauthorized exposure of $30.02. Recommended protective card block, case creation, and compliance actions.",
+    "similar_prior_cases": [
+      "CC-2166",
+      "CC-2761"
+    ],
+    "summary": "Investigation of flagged transaction 3581141 on card C08299-K1 identified card-not-present fraud with assessed fraud probability of 0.78. Customer C08299 reported an unrecognized $30.02 online purchase. Post-flag analysis revealed 9 additional unauthorized transactions within 72 hours totaling $330.12, exhibiting a classic card testing/enumeration pattern. Device fingerprint shows partial identity match and address mismatch. Total exposure: $360.14. Historical closed cases CC-2166 and CC-2761 confirm matching CNP fraud pattern. Recommended: card block, full reimbursement, SAR filing, and account monitoring.",
     "written_to_graph": true,
     "graph_case_id": "CASE-2016-009"
   },
@@ -54,26 +126,52 @@
       {
         "action": "BLOCK_CARD",
         "route": "L1",
-        "reason": "R2: Customer reported unrecognized purchase; exposure $30.02."
+        "reason": "R2: Customer-disputed CNP fraud; total exposure $360.14 across 10 txns."
       },
       {
         "action": "CREATE_CASE",
         "route": "auto",
-        "reason": "R2: Customer dispute formally logged."
+        "reason": "R2: Customer dispute with card testing velocity pattern confirmed."
+      },
+      {
+        "action": "FILE_REPORT",
+        "route": "L2",
+        "reason": "R6: Cumulative exposure $360.14 with card testing pattern meets SAR threshold."
+      },
+      {
+        "action": "WARN_CUSTOMER",
+        "route": "L1",
+        "reason": "Notify customer of confirmed fraud and remediation steps."
+      },
+      {
+        "action": "MONITOR_CARD",
+        "route": "auto",
+        "reason": "Post-compromise surveillance for additional fraudulent activity on C08299-K1."
+      },
+      {
+        "action": "ESCALATE_TO_ANALYST",
+        "route": "L2",
+        "reason": "Card testing pattern may indicate broader compromise; escalate for syndicate review."
       }
     ],
-    "what_changed": "nothing"
+    "what_changed": "Post-flag velocity analysis revealed 9 additional unauthorized transactions. SAR filing and full remediation added."
   },
   "sar": {
-    "file": false,
-    "reason": "Activity does not meet mandatory filing criteria under Bank Policy R2 or R6.",
-    "narrative": "",
-    "subjects": [],
-    "total_amount_usd": 0.0,
-    "activity_dates": []
+    "file": true,
+    "reason": "Bank Policy R2/R6: Customer-disputed unauthorized card activity with cumulative exposure of $360.14 across 10 transactions, card testing velocity anomaly detected.",
+    "narrative": "Customer C08299 reported an unrecognized $30.02 online purchase on card C08299-K1 (txn 3581141, 2016-12-28). Investigation revealed 9 additional unauthorized transactions within 72 hours post-flagging, totaling $330.12, exhibiting a card testing enumeration pattern ($20\u2013$50 clusters). Device fingerprint shows a desktop with partial identity match and address mismatch. Recommended: card block, full reimbursement, and SAR filing.",
+    "subjects": [
+      "C08299"
+    ],
+    "total_amount_usd": 360.14,
+    "activity_dates": [
+      "2016-12-28",
+      "2016-12-30",
+      "2016-12-31"
+    ]
   },
   "stop_reason": "Customer direct dispute provides initial testimony; graph corroboration assessed.",
-  "tool_calls": 6,
+  "tool_calls": 7,
   "tokens": 1250,
   "latency_s": 0.0
 }

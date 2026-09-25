@@ -1,4 +1,3 @@
-import pytest
 from src.fraud_agent.policy.engine import PolicyEngine
 from src.fraud_agent.policy.sar import SAREngine
 

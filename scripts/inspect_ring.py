@@ -16,7 +16,8 @@ match_tids = set(matches["TransactionID"])
 
 shared_cards = set()
 shared_custs = set()
-for chunk in pd.read_csv("data/raw/transactions.csv", chunksize=100000, usecols=["TransactionID", "customer_id", "card1", "ts", "TransactionAmt"]):
+cols = ["TransactionID", "customer_id", "card1", "ts", "TransactionAmt"]
+for chunk in pd.read_csv("data/raw/transactions.csv", chunksize=100000, usecols=cols):  # type: ignore
     chunk["TransactionID"] = chunk["TransactionID"].astype(str)
     hit = chunk[chunk["TransactionID"].isin(match_tids)]
     for _, row in hit.iterrows():

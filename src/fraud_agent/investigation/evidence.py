@@ -70,7 +70,9 @@ class EvidenceLedger:
         contradicts: Optional[List[str]] = None,
         timestamp: Optional[str] = None,
         provenance_query: Optional[str] = None,
-        source_trust: str = "AUTHORITATIVE_GRAPH"
+        source_trust: str = "AUTHORITATIVE_GRAPH",
+        layer: int = 1,
+        confidence: float = 0.85
     ) -> EvidenceItem:
         """
         Adds a verified observation to the immutable Evidence Ledger.
@@ -87,8 +89,10 @@ class EvidenceLedger:
         if timestamp and self.cutoff_ts and timestamp > self.cutoff_ts:
             temporal_valid = False
 
-        # Apply prompt injection defense if external/untrusted
+        # Preserve immutable forensic representation and derive sanitized presentation
+        raw_claim = claim
         clean_claim = sanitize_untrusted_text(claim) if source in ["customer", "external", "analyst_notes"] else claim
+        injection_detected = (clean_claim != raw_claim)
 
         item = EvidenceItem(
             evidence_id=evidence_id,
@@ -100,13 +104,24 @@ class EvidenceLedger:
             temporal_valid=temporal_valid,
             supports=supports or [],
             contradicts=contradicts or [],
-            timestamp=timestamp
+            timestamp=timestamp,
+            raw_claim=raw_claim,
+            sanitized_claim=clean_claim,
+            injection_detected=injection_detected,
+            source_trust=source_trust,
+            item_hash=None,
+            layer=layer,
+            confidence=confidence,
+            provenance_query=provenance_query
         )
 
-        # Canonical Item Representation for Cryptographic Hashing
+        # Canonical Forensic Item Representation for Cryptographic Hashing
         canonical_record = {
             "evidence_id": evidence_id,
             "claim": clean_claim,
+            "raw_claim": raw_claim,
+            "sanitized_claim": clean_claim,
+            "injection_detected": injection_detected,
             "source": source,
             "ref": ref,
             "entity_ids": item.entity_ids,
@@ -116,8 +131,9 @@ class EvidenceLedger:
         }
         item_raw_json = canonical_json(canonical_record)
         item_hash = hashlib.sha256(item_raw_json.encode("utf-8")).hexdigest()
+        item.item_hash = item_hash
 
-        # Merkle Hash Chaining: H_i = SHA-256(H_{i-1} + item_hash)
+        # Cryptographic Hash Chaining: H_i = SHA-256(H_{i-1} + item_hash)
         chain_hash = hashlib.sha256((self._previous_hash + item_hash).encode("utf-8")).hexdigest()
         prev_h = self._previous_hash
         self._previous_hash = chain_hash
@@ -131,13 +147,14 @@ class EvidenceLedger:
             "query": provenance_query or ref,
             "source_trust": source_trust,
             "recorded_at": time.time(),
-            "temporal_valid": temporal_valid
+            "temporal_valid": temporal_valid,
+            "injection_detected": injection_detected
         }
         return item
 
     def finalize_ledger(self) -> str:
         """
-        Finalizes the Evidence Ledger, sealing the Merkle root hash.
+        Finalizes the Evidence Ledger, sealing the cryptographic root hash.
         Once finalized, no further items may be appended or modified.
         """
         self.is_finalized = True
@@ -147,7 +164,7 @@ class EvidenceLedger:
 
     def verify_integrity(self) -> bool:
         """
-        Audits and cryptographically verifies the entire Merkle hash chain from genesis.
+        Audits and cryptographically verifies the entire SHA-256 hash chain from genesis.
         Returns True if the ledger is intact and untampered; False if modified.
         """
         running_hash = self.GENESIS_HASH
@@ -155,6 +172,9 @@ class EvidenceLedger:
             canonical_record = {
                 "evidence_id": item.evidence_id,
                 "claim": item.claim,
+                "raw_claim": item.raw_claim if item.raw_claim is not None else item.claim,
+                "sanitized_claim": item.sanitized_claim if item.sanitized_claim is not None else item.claim,
+                "injection_detected": item.injection_detected,
                 "source": item.source,
                 "ref": item.ref,
                 "entity_ids": item.entity_ids,

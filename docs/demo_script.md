@@ -49,16 +49,16 @@
 ### Spoken Script:
 > "Now let's examine a complex, coordinated fraud attack: Case HHG-014. This was triggered by an analyst query regarding an unusual Samsung mobile device profile on transaction 3478561.
 > 
-> CaseGuard invokes the parameterized GSQL query `device_ring`. In milliseconds, TigerGraph traverses the multi-hop hardware edges and uncovers a massive syndicate ring: this exact device profile is being shared across **44 distinct customers and 44 distinct cards**!
+> CaseGuard invokes the parameterized GSQL query `device_ring`. In milliseconds, TigerGraph traverses the multi-hop hardware edges and uncovers a massive syndicate ring: this exact device profile is being shared across **58 distinct cards**!
 > 
 > Because this coordinated abuse does not match the five standard typologies, CaseGuard avoids forcing a false classification. It tags it as `undocumented`, invoking Bank Policy Rules R6 and R9.
 > 
 > Notice the two-phase governance flow:
 > - In Phase 1, it recommends an initial block and heightened monitoring.
 > - In Phase 2, it updates the recommendation to `DECLINE_TRANSACTION`, `BLOCK_CARD` [L1], `CREATE_CASE`, `MONITOR_CONNECTED_CARDS`, and `FILE_REPORT` [L2 approval].
-> - Look at the 'What Changed' rationale: it explicitly explains how the 44-card device linkage triggered the mandatory regulatory filing.
+> - Look at the 'What Changed' rationale: it explicitly explains how the 58-card device linkage triggered the mandatory regulatory filing.
 > 
-> If we click 'View FinCEN SAR Filing', CaseGuard has automatically drafted a complete, audit-ready regulatory narrative conforming to FinCEN 31 CFR 1020.320, listing all 44 subject cards, the device fingerprint, and the exact dollar exposure."
+> If we click 'View FinCEN SAR Filing', CaseGuard has automatically drafted a complete, audit-ready regulatory narrative conforming to FinCEN 31 CFR 1020.320, listing all subject cards, the device fingerprint, and the exact dollar exposure."
 
 ---
 

@@ -52,6 +52,14 @@
         "entity_ids": [
           "CC-1228"
         ]
+      },
+      {
+        "claim": "Bank Policy R3: In-person transactions conforming to historical multi-month spending and billing regions require automatic clearing.",
+        "source": "document",
+        "ref": "policy:R3",
+        "entity_ids": [
+          "C09933-K15868"
+        ]
       }
     ],
     "similar_prior_cases": [
@@ -100,7 +108,7 @@
     "activity_dates": []
   },
   "stop_reason": "Historical customer baseline confirms legitimate recurring/domestic activity.",
-  "tool_calls": 6,
+  "tool_calls": 7,
   "tokens": 1250,
   "latency_s": 0.0
 }

@@ -6,12 +6,15 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['"Cabinet Grotesk"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+      },
       colors: {
-        darkbg: "#0B0F19",
-        cardbg: "#111827",
-        panelbg: "#1F2937",
-        borderline: "#374151"
-      }
+        background: '#F8FAFC',
+        foreground: '#0F172A',
+      },
     },
   },
   plugins: [],

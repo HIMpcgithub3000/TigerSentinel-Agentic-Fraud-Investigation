@@ -7,7 +7,7 @@ import os
 import sys
 import json
 import glob
-from typing import List, Dict, Any
+from typing import List
 
 # Add project root to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -78,6 +78,11 @@ def validate_file(filepath: str) -> List[str]:
     initial = nba.get("initial", [])
     final = nba.get("final", [])
 
+    for a in initial:
+        act = a.get("action")
+        if act not in ALLOWED_ACTIONS:
+            errors.append(f"Invalid action in initial: '{act}'")
+
     has_file_report = False
     for a in final:
         act = a.get("action")
@@ -135,9 +140,9 @@ def validate_submission_dir(output_dir: str = "output/cases") -> bool:
             console.print(f"[green]✓ {fname} passed all contract checks.[/green]")
 
     if all_passed:
-        console.print(f"\n[bold green]★ SUCCESS: All 20 benchmark case files strictly conform to the challenge contract![/bold green]")
+        console.print("\n[bold green]★ SUCCESS: All 20 benchmark case files strictly conform to the challenge contract![/bold green]")
     else:
-        console.print(f"\n[bold red]Validation failed with errors listed above.[/bold red]")
+        console.print("\n[bold red]Validation failed with errors listed above.[/bold red]")
 
     return all_passed
 

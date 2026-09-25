@@ -1,21 +1,20 @@
 // GSQL Query: card_window
 // Retrieves recent transaction window for a card ordered by timestamp before as_of_ts
-USE GRAPH FraudGraph
+USE GRAPH fraudstate
 
-CREATE QUERY card_window(STRING card_id, INT hours, STRING as_of_ts) FOR GRAPH FraudGraph {
-    TYPEDEF TUPLE<STRING txn_id, STRING ts, DOUBLE amount, STRING channel, DOUBLE risk_score, STRING addr1> TxnInfo;
+CREATE OR REPLACE QUERY card_window(VERTEX<Card> card_id, INT hours, STRING as_of_ts) FOR GRAPH fraudstate {
+    TYPEDEF TUPLE<VERTEX<Transaction> txn, STRING ts, DOUBLE amount, STRING channel, DOUBLE risk_score, STRING addr1> TxnInfo;
     ListAccum<TxnInfo> @@txns;
     SumAccum<INT> @@micro_auth_count;
     SumAccum<INT> @@total_window_txns;
     SumAccum<DOUBLE> @@window_exposure;
 
-    Cards = {Card.*};
-    TargetCard = SELECT c FROM Cards:c WHERE c.card_id == card_id;
+    TargetCard = { card_id };
 
     Txns = SELECT t FROM TargetCard:c -(MADE:e)-> Transaction:t
            WHERE t.ts <= as_of_ts
            ACCUM 
-               @@txns += TxnInfo(t.transaction_id, t.ts, t.amount, t.channel, t.risk_score, t.addr1),
+               @@txns += TxnInfo(t, t.ts, t.amount, t.channel, t.risk_score, t.addr1),
                @@total_window_txns += 1,
                @@window_exposure += t.amount,
                CASE WHEN t.amount < 5.0 THEN @@micro_auth_count += 1 END;

@@ -105,7 +105,7 @@
     "activity_dates": []
   },
   "stop_reason": "Customer verification response settled the verdict and confirmed defensible course of action. Further steps would not alter the recommended policy actions.",
-  "tool_calls": 7,
+  "tool_calls": 8,
   "tokens": 1250,
   "latency_s": 0.0
 }

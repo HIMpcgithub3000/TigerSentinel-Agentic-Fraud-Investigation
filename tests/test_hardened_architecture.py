@@ -13,7 +13,6 @@ import pytest
 import time
 from src.fraud_agent.graph.client import TigerGraphClient
 from src.fraud_agent.agent.tools import ToolRegistry
-from src.fraud_agent.agent.orchestrator import FraudInvestigationAgent
 
 
 @pytest.fixture(scope="module")
@@ -149,6 +148,7 @@ def test_merkle_hash_chain_tamper_evidence():
         strength=0.85
     )
     root_hash = ledger.finalize_ledger()
+    assert len(root_hash) == 64
     assert ledger.verify_integrity() is True
 
     # Adversarial tampering: modify the first evidence item's claim directly

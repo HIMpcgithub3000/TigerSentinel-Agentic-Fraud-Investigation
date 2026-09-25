@@ -1,6 +1,6 @@
 // GSQL Query: write_investigation_case
 // Persists investigation case verdict, metadata, and memory links to TigerGraph
-USE GRAPH FraudGraph
+USE GRAPH fraudstate
 
 CREATE QUERY write_investigation_case(
     STRING case_id,
@@ -13,7 +13,7 @@ CREATE QUERY write_investigation_case(
     STRING flagged_txn_id,
     STRING card_id,
     STRING created_at
-) FOR GRAPH FraudGraph {
+) FOR GRAPH fraudstate {
     
     // Insert or update InvestigationCase vertex
     INSERT INTO InvestigationCase VALUES (

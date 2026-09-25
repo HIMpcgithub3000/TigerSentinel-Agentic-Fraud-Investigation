@@ -6,16 +6,26 @@ Supports:
 """
 
 import os
-import re
-import json
 import time
-import hashlib
 import threading
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 import networkx as nx
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    env_file = os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env")
+    if os.path.exists(env_file):
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip())
 
 logger = logging.getLogger(__name__)
 
@@ -34,22 +44,41 @@ class TigerGraphClient:
 
     def _init_backend(self):
         """Initializes either pyTigerGraph connection or local in-memory graph index."""
-        if not self.use_local and os.getenv("TG_HOST"):
+        tg_host = os.getenv("TG_HOST", "")
+        has_auth = bool(os.getenv("TG_API_TOKEN")) or bool(os.getenv("TG_SECRET")) or (bool(os.getenv("TG_PASSWORD")) and os.getenv("TG_PASSWORD") != "your_password")
+        is_placeholder = (
+            not tg_host
+            or "your-instance" in tg_host
+            or not has_auth
+            or not tg_host.startswith("http")
+        )
+        self.is_live = False
+        if not self.use_local and not is_placeholder:
             try:
                 import pyTigerGraph as tg
+                logger.info(f"Connecting to live TigerGraph Savanna instance at {tg_host}...")
                 self.tg_conn = tg.TigerGraphConnection(
-                    host=os.getenv("TG_HOST"),
+                    host=tg_host,
                     graphname=os.getenv("TG_GRAPHNAME", "FraudGraph"),
                     username=os.getenv("TG_USERNAME", "tigergraph"),
                     password=os.getenv("TG_PASSWORD", ""),
-                    apiToken=os.getenv("TG_API_TOKEN", "")
+                    apiToken=os.getenv("TG_API_TOKEN", ""),
+                    gsqlSecret=os.getenv("TG_SECRET", ""),
+                    tgCloud=os.getenv("TG_TGCLOUD", "true").lower() == "true",
+                    restppPort=os.getenv("TG_RESTPP_PORT", "9000"),
+                    gsPort=os.getenv("TG_GS_PORT", "14240")
                 )
-                logger.info("Connected to live TigerGraph Savanna instance.")
+                self.tg_conn.getVer()
+                self.is_live = True
+                logger.info(f"Successfully connected to live TigerGraph Savanna at {tg_host}")
                 return
             except Exception as e:
                 logger.warning(f"Could not connect to live TigerGraph ({e}). Falling back to local engine.")
+                self.is_live = False
+        elif not self.use_local and is_placeholder:
+            logger.warning("LIVE TIGERGRAPH: NOT EXECUTED — credentials/instance unavailable (placeholder config in .env)")
 
-        logger.info("Initializing Local Deterministic Graph Engine...")
+        logger.info("Initializing Local Deterministic Graph Engine (Zero Temporal Leakage)...")
         self._init_local_engine()
 
     def _init_local_engine(self):
@@ -66,13 +95,13 @@ class TigerGraphClient:
         closed_cases_path = os.path.join(self.data_dir, "closed_cases_history.csv")
         if os.path.exists(closed_cases_path):
             df_cases = pd.read_csv(closed_cases_path)
-            self.closed_cases = df_cases.to_dict(orient="records")
+            self.closed_cases = [dict(c) for c in df_cases.to_dict(orient="records")]  # type: ignore
             logger.info(f"Loaded {len(self.closed_cases)} closed historical cases.")
 
         # 2. Load Identity Records (Device Profiles)
         ident_path = os.path.join(self.data_dir, "identity.csv")
         if os.path.exists(ident_path):
-            df_id = pd.read_csv(ident_path, usecols=["TransactionID", "DeviceInfo", "id_30", "id_31", "id_33"])
+            df_id = pd.read_csv(ident_path, usecols=["TransactionID", "DeviceInfo", "id_30", "id_31", "id_33"])  # type: ignore
             df_id["TransactionID"] = df_id["TransactionID"].astype(str)
             for _, row in df_id.iterrows():
                 tid = str(row["TransactionID"])
@@ -93,10 +122,10 @@ class TigerGraphClient:
         txns_path = os.path.join(self.data_dir, "transactions.csv")
         cases_pack_path = os.path.join(self.data_dir, "case_pack.csv")
         
-        target_custs = set()
-        target_cards = set()
-        target_txns = set()
-        target_device_txns = set()
+        target_custs: set[str] = set()
+        target_cards: set[str] = set()
+        target_txns: set[str] = set()
+        target_device_txns: set[str] = set()
 
         if os.path.exists(cases_pack_path):
             df_pack = pd.read_csv(cases_pack_path)
@@ -113,7 +142,7 @@ class TigerGraphClient:
         if os.path.exists(txns_path):
             chunk_size = 50000
             for chunk in pd.read_csv(txns_path, chunksize=chunk_size, 
-                                     usecols=["TransactionID", "TransactionAmt", "ProductCD", "card1", "card4", 
+                                     usecols=["TransactionID", "TransactionAmt", "ProductCD", "card1", "card4",   # type: ignore
                                               "addr1", "P_emaildomain", "customer_id", "ts", "channel", "risk_score"]):
                 chunk["TransactionID"] = chunk["TransactionID"].astype(str)
                 chunk["customer_id"] = chunk["customer_id"].astype(str)
@@ -274,9 +303,9 @@ class TigerGraphClient:
             return cached
 
         visited_devices = {profile_id}
-        discovered_cards = set()
-        discovered_customers = set()
-        discovered_txns = set()
+        discovered_cards: set[str] = set()
+        discovered_customers: set[str] = set()
+        discovered_txns: set[str] = set()
         syndicate_exposure = 0.0
 
         current_devices = {profile_id}
@@ -463,3 +492,124 @@ class TigerGraphClient:
         else:
             logger.error(f"Read-after-write persistence verification failed for {case_id}!")
             return False
+
+    # -------------------------------------------------------------------------
+    # Policy & Regulatory Document Retrieval (GraphRAG Layer 2)
+    # -------------------------------------------------------------------------
+
+    _policy_docs: Optional[Dict[str, Dict[str, Any]]] = None
+
+    def _load_policy_documents(self) -> Dict[str, Dict[str, Any]]:
+        """Loads structured policy and regulatory documents for GraphRAG retrieval."""
+        if self._policy_docs is not None:
+            return self._policy_docs
+
+        docs: Dict[str, Dict[str, Any]] = {}
+        policy_dir = os.path.join(self.data_dir, "policies")
+
+        if os.path.exists(policy_dir):
+            for fname in os.listdir(policy_dir):
+                fpath = os.path.join(policy_dir, fname)
+                if os.path.isfile(fpath):
+                    with open(fpath, "r") as f:
+                        content = f.read()
+                    doc_id = fname.replace(".md", "").replace(".txt", "")
+                    docs[doc_id] = {
+                        "doc_id": doc_id,
+                        "filename": fname,
+                        "content": content,
+                        "sections": self._parse_doc_sections(content)
+                    }
+                    logger.info(f"Loaded policy document: {fname}")
+
+        self._policy_docs = docs
+        return docs
+
+    @staticmethod
+    def _parse_doc_sections(content: str) -> List[Dict[str, str]]:
+        """Parses markdown document into structured sections."""
+        sections: List[Dict[str, str]] = []
+        current_title = ""
+        current_body: List[str] = []
+
+        for line in content.split("\n"):
+            if line.startswith("## ") or line.startswith("# "):
+                if current_title or current_body:
+                    sections.append({
+                        "title": current_title.strip(),
+                        "content": "\n".join(current_body).strip()
+                    })
+                current_title = line.lstrip("#").strip()
+                current_body = []
+            else:
+                current_body.append(line)
+
+        if current_title or current_body:
+            sections.append({
+                "title": current_title.strip(),
+                "content": "\n".join(current_body).strip()
+            })
+
+        return sections
+
+    def retrieve_policy_context(self, pattern: str, exposure_usd: float, 
+                                 risk_band: str = "medium") -> Dict[str, Any]:
+        """
+        GraphRAG Layer 2: Retrieves applicable policy rules, regulatory guidelines,
+        and SAR filing thresholds for the given fraud pattern and exposure.
+        
+        This implements the 'institutional knowledge' retrieval layer specified in
+        the hackathon architecture: policy documents + regulatory typologies + 
+        approval authority matrices.
+        """
+        cache_key = f"policy_ctx:{pattern}:{exposure_usd}:{risk_band}"
+        cached = self._get_cache(cache_key)
+        if cached is not None:
+            return cached
+
+        docs = self._load_policy_documents()
+
+        # Extract applicable rules from policy
+        applicable_rules: List[str] = []
+        rule_map = {
+            "card_testing": ["R5", "R1"],
+            "card_not_present_fraud": ["R1", "R2", "R4"],
+            "card_not_present_new_device": ["R1", "R2", "R4"],
+            "out_of_region_use": ["R2", "R3"],
+            "account_takeover": ["R2", "R6", "R10"],
+            "undocumented": ["R9", "R6", "R8"],
+            "none": ["R3", "R1"]
+        }
+        applicable_rules = rule_map.get(pattern, ["R1", "R8"])
+
+        # SAR filing threshold check
+        sar_required = False
+        sar_reason = ""
+        if exposure_usd > 1000.0:
+            sar_required = True
+            sar_reason = "Exposure exceeds $1,000 statutory threshold (31 CFR 1020.320)"
+        if pattern == "undocumented":
+            sar_required = True
+            sar_reason = "R9: Undocumented/coordinated pattern requires regulatory filing"
+
+        # Retrieve relevant regulatory sections
+        reg_sections: List[Dict[str, str]] = []
+        if "regulatory_guidelines" in docs:
+            for section in docs["regulatory_guidelines"].get("sections", []):
+                title_lower = section["title"].lower()
+                if any(kw in title_lower for kw in ["sar", "regulatory", "typolog", "narrative"]):
+                    reg_sections.append(section)
+
+        result = {
+            "pattern": pattern,
+            "applicable_rules": applicable_rules,
+            "sar_required": sar_required,
+            "sar_reason": sar_reason,
+            "approval_route": "L2" if sar_required else ("L1" if exposure_usd > 100 else "auto"),
+            "regulatory_context": reg_sections[:3],
+            "policy_source": "data/raw/policies/fraud_policy.md",
+            "regulatory_source": "data/raw/policies/regulatory_guidelines.md"
+        }
+
+        self._set_cache(cache_key, result)
+        return result

@@ -31,3 +31,13 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "ruff>=0.1.0"
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+extraPaths = [".", "src"]
+reportTypedDictNotRequiredAccess = "none"
+

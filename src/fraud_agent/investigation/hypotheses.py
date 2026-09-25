@@ -3,16 +3,31 @@ Hypothesis Engine for Evaluating Competing Fraud Typologies and Contradictions.
 Determines evidence strength, resolves contradictions, and computes calibrated fraud probability.
 """
 
-from typing import Dict, Any, List, Tuple, Optional
-from src.fraud_agent.investigation.evidence import EvidenceLedger
-from src.fraud_agent.investigation.patterns import (
-    detect_card_testing,
-    detect_card_not_present,
-    detect_card_not_present_new_device,
-    detect_out_of_region,
-    detect_account_takeover,
-    detect_undocumented_ring
-)
+from typing import Dict, Any, List, Optional
+
+try:
+    from .evidence import EvidenceLedger
+    from .decision_tree import EvidenceDecisionTree
+    from .patterns import (
+        detect_card_testing,
+        detect_card_not_present,
+        detect_card_not_present_new_device,
+        detect_out_of_region,
+        detect_account_takeover,
+        detect_undocumented_ring,
+    )
+except ImportError:
+    from src.fraud_agent.investigation.evidence import EvidenceLedger
+    from src.fraud_agent.investigation.decision_tree import EvidenceDecisionTree
+    from src.fraud_agent.investigation.patterns import (
+        detect_card_testing,
+        detect_card_not_present,
+        detect_card_not_present_new_device,
+        detect_out_of_region,
+        detect_account_takeover,
+        detect_undocumented_ring,
+    )
+
 
 
 class HypothesisEngine:
@@ -184,6 +199,20 @@ class HypothesisEngine:
                 supports=["card_not_present_fraud"]
             )
 
+        # 6b. Check Account Takeover
+        is_ato, ato_score, ato_ids, ato_desc = detect_account_takeover(window_txns, flagged_txn, baseline)
+        if is_ato and not is_undoc:
+            hypotheses_scores["account_takeover"] = ato_score
+            affected_txns = ato_ids
+            ledger.add_evidence(
+                claim=ato_desc,
+                source="graph",
+                ref="query:card_window",
+                entity_ids=ato_ids,
+                strength=ato_score,
+                supports=["account_takeover"]
+            )
+
         # 7. Similar Historical Cases Evidence
         prior_case_ids = []
         for c in similar_cases:
@@ -263,7 +292,7 @@ class HypothesisEngine:
                 best_score = score
                 best_pattern = pat
 
-        # Compute calibrated fraud probability
+        # Compute deterministic heuristic fraud score (rule-based heuristic combination, not statistical calibration)
         if best_pattern == "none":
             fraud_prob = max(0.02, min(0.35, risk_score * 0.4))
             verdict = "legitimate"
@@ -278,6 +307,99 @@ class HypothesisEngine:
         # Calculate exposure
         exposure = amt if verdict != "legitimate" else 0.0
 
+        # 10. Layer 6 — Policy / Typology Context (GraphRAG Grounding)
+        if best_pattern == "undocumented" or (device_ring and device_ring.get("is_syndicate")):
+            ledger.add_evidence(
+                claim="Bank Policy R6/R9 & 31 CFR § 1020.320: Undocumented multi-card syndicate ring mandates protective card blocks, enhanced monitoring, and FinCEN SAR filing.",
+                source="document",
+                ref="policy:R6_R9:regulatory_31_CFR_1020_320",
+                entity_ids=[card_id],
+                strength=1.0,
+                supports=["undocumented"],
+                layer=6,
+                confidence=1.0
+            )
+        elif best_pattern == "card_testing":
+            ledger.add_evidence(
+                claim="Bank Policy R5: Multiple micro-authorization sequence requires immediate authorization decline and card blocking over $100 exposure.",
+                source="document",
+                ref="policy:R5",
+                entity_ids=[card_id],
+                strength=1.0,
+                supports=["card_testing"],
+                layer=6,
+                confidence=1.0
+            )
+        elif best_pattern == "out_of_region_use":
+            ledger.add_evidence(
+                claim="Bank Policy R1/R4: Geographic divergence on single weak alert requires customer verification before blocking.",
+                source="document",
+                ref="policy:R1_R4",
+                entity_ids=[card_id],
+                strength=1.0,
+                supports=["out_of_region_use"],
+                layer=6,
+                confidence=1.0
+            )
+        elif best_pattern == "none":
+            ledger.add_evidence(
+                claim="Bank Policy R3: In-person transactions conforming to historical multi-month spending and billing regions require automatic clearing.",
+                source="document",
+                ref="policy:R3",
+                entity_ids=[card_id],
+                strength=1.0,
+                supports=["none"],
+                layer=6,
+                confidence=1.0
+            )
+
+        # 11. Explicit Contradiction Analysis
+        supporting_ev_ids: List[str] = []
+        contradicting_ev_ids: List[str] = []
+        unresolved_ev_ids: List[str] = []
+
+        for item in ledger.items:
+            ev_id = getattr(item, "evidence_id", "")
+            supp = getattr(item, "supports", [])
+            contra = getattr(item, "contradicts", [])
+
+            if best_pattern in supp or (best_pattern == "none" and "none" in supp):
+                supporting_ev_ids.append(ev_id)
+            elif ("none" in supp and best_pattern != "none") or best_pattern in contra:
+                contradicting_ev_ids.append(ev_id)
+            else:
+                unresolved_ev_ids.append(ev_id)
+
+        is_contradicted = len(contradicting_ev_ids) > 0
+        total_relevant = len(supporting_ev_ids) + len(contradicting_ev_ids)
+        contra_ratio = round(len(contradicting_ev_ids) / max(1, total_relevant), 3)
+
+        contradiction_data = {
+            "supporting_evidence_ids": supporting_ev_ids,
+            "contradicting_evidence_ids": contradicting_ev_ids,
+            "unresolved_evidence_ids": unresolved_ev_ids,
+            "is_contradicted": is_contradicted,
+            "contradiction_ratio": contra_ratio
+        }
+
+        # 12. Evaluate Deterministic Evidence Decision Tree
+        is_sufficient_flag = (best_pattern == "none" or (best_pattern == "card_testing" and best_score >= 0.85) or trigger_type == "customer_report" or best_score >= 0.70)
+        tree_eval = EvidenceDecisionTree.evaluate(
+            trigger_type=trigger_type,
+            trigger_text=trigger_text,
+            flagged_txn=flagged_txn,
+            baseline=baseline,
+            device_ring=device_ring,
+            window_txns=window_txns,
+            hypotheses_scores=hypotheses_scores,
+            contradiction_data=contradiction_data,
+            is_sufficient=is_sufficient_flag,
+            verdict=verdict,
+            fraud_probability=round(fraud_prob, 2),
+            exposure_usd=round(exposure, 2),
+            evidence_items=ledger.items
+        )
+
         return {
             "primary_hypothesis": best_pattern,
             "pattern_description": pattern_desc,
@@ -286,5 +408,7 @@ class HypothesisEngine:
             "exposure_usd": round(exposure, 2),
             "affected_txn_ids": affected_txns,
             "hypotheses_scores": hypotheses_scores,
-            "prior_cases_cited": prior_case_ids
+            "prior_cases_cited": prior_case_ids,
+            "contradiction_analysis": contradiction_data,
+            "decision_tree_trace": tree_eval.get("decision_tree_trace", [])
         }

@@ -196,9 +196,26 @@
         ]
       },
       {
+        "claim": "Graph centrality analysis flagged hardware profile as high-degree hub shared across 74 distinct payment cards.",
+        "source": "graph",
+        "ref": "algorithm:degree_and_connectivity_centrality",
+        "entity_ids": [
+          "C07297-K13729",
+          "Trident/7.0 | Windows 7 | ie 11.0 for desktop | 1920x1080"
+        ]
+      },
+      {
         "claim": "Cardholder explicitly states they did not make this purchase and still has the card.",
         "source": "customer",
         "ref": "evidence_request:customer_validation",
+        "entity_ids": [
+          "C07297-K13729"
+        ]
+      },
+      {
+        "claim": "Bank Policy R6/R9 & 31 CFR § 1020.320: Undocumented multi-card syndicate ring mandates protective card blocks, enhanced monitoring, and FinCEN SAR filing.",
+        "source": "document",
+        "ref": "policy:R6_R9:regulatory_31_CFR_1020_320",
         "entity_ids": [
           "C07297-K13729"
         ]
@@ -336,7 +353,7 @@
     ]
   },
   "stop_reason": "Customer direct dispute provides initial testimony; graph corroboration assessed.",
-  "tool_calls": 6,
+  "tool_calls": 7,
   "tokens": 1250,
   "latency_s": 0.01
 }

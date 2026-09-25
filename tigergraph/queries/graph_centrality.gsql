@@ -1,0 +1,65 @@
+CREATE QUERY graph_centrality(
+    VERTEX<Card> card_id,
+    STRING device_profile_id,
+    STRING as_of_timestamp
+) FOR GRAPH fraudstate
+SYNTAX V2 {
+    /*
+     * Graph Algorithm: Degree Centrality & Connectivity Analysis
+     *
+     * Computes entity centrality metrics, degree anomaly detection,
+     * and hub identification for fraud investigation evidence.
+     *
+     * Returns:
+     *   - card_degree: Number of transactions on the card
+     *   - device_degree: Total transactions from the device profile
+     *   - num_cards_sharing: Number of distinct cards sharing this device
+     *   - is_hub_anomaly: True if >= 3 distinct cards share the device
+     *   - centrality_score: Computed centrality metric (0-1)
+     *
+     * Usage: Provides objective graph topology evidence to hypotheses.
+     */
+
+    INT card_txn_count = 0;
+    INT device_txn_count = 0;
+    INT cards_sharing_device = 0;
+    BOOL hub_anomaly = FALSE;
+    FLOAT centrality = 0.0;
+
+    // Count transactions on the target card before cutoff
+    card_txns = SELECT t
+        FROM card_id:c -(MADE:e)-> Transaction:t
+        WHERE t.ts <= as_of_timestamp
+        ACCUM card_txn_count += 1;
+
+    // Count transactions and distinct cards sharing the device profile
+    IF device_profile_id != "" AND device_profile_id != "Unknown Device" THEN
+        device_cards = SELECT c
+            FROM Transaction:t -(FROM_DEVICE:e)-> DeviceProfile:d,
+                 Card:c -(MADE:m)-> Transaction:t2
+            WHERE d.profile_id == device_profile_id
+              AND t2.ts <= as_of_timestamp
+            ACCUM
+                device_txn_count += 1
+            POST-ACCUM
+                cards_sharing_device += 1;
+    END;
+
+    // Hub anomaly: device shared across >= 3 distinct cards
+    IF cards_sharing_device >= 3 THEN
+        hub_anomaly = TRUE;
+    END;
+
+    // Centrality score: weighted combination
+    centrality = card_txn_count * 0.1 + cards_sharing_device * 0.3;
+    IF centrality > 1.0 THEN
+        centrality = 1.0;
+    END;
+
+    PRINT card_txn_count AS card_degree,
+          device_txn_count AS device_degree,
+          cards_sharing_device AS num_cards_sharing,
+          hub_anomaly AS is_hub_anomaly,
+          centrality AS centrality_score,
+          "degree_and_connectivity_centrality" AS algorithm;
+}

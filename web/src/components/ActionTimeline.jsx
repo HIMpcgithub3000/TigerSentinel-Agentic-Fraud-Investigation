@@ -52,19 +52,19 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
       {/* 2-Phase Action Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Phase 1: Initial Actions */}
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 shadow-sm flex flex-col justify-between">
+        <div className="bg-[#0B0D14] p-4 rounded-xl border border-orange-950/40 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-orange-950/40">
               <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-400" /> Phase 1: Initial Actions
+                <Clock className="w-3.5 h-3.5 text-orange-400" /> Phase 1: Initial Actions
               </span>
-              <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-mono text-slate-500 bg-[#121520] px-2 py-0.5 rounded border border-orange-950/30">
                 Pre-Evidence
               </span>
             </div>
             <div className="space-y-2.5">
               {initial.map((a, idx) => (
-                <div key={idx} className="p-3 bg-slate-800/40 rounded-lg border border-slate-700/60 transition hover:border-slate-600">
+                <div key={idx} className="p-3 bg-[#11141E]/80 rounded-lg border border-orange-950/30 transition hover:border-orange-500/40">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-100">{a.action}</span>
                     {getRouteBadge(a.route)}
@@ -77,13 +77,13 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
         </div>
 
         {/* Phase 2: Final Actions */}
-        <div className="bg-slate-900/60 p-4 rounded-xl border border-blue-900/50 shadow-sm flex flex-col justify-between">
+        <div className="bg-[#0D0F18] p-4 rounded-xl border border-orange-500/30 shadow-md shadow-orange-950/20 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-blue-400" /> Phase 2: Final Actions
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-orange-950/40">
+              <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-[#FF5500]" /> Phase 2: Final Actions
               </span>
-              <span className="text-[10px] font-mono text-blue-400/90 bg-blue-950/60 border border-blue-800/40 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-mono text-orange-300 bg-orange-950/60 border border-orange-800/40 px-2 py-0.5 rounded">
                 Post-Evidence
               </span>
             </div>
@@ -91,9 +91,9 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
               {final.map((a, idx) => {
                 const isApproved = approvedActions[a.action];
                 return (
-                  <div key={idx} className="p-3 bg-blue-950/20 rounded-lg border border-blue-900/40 transition hover:border-blue-700/60">
+                  <div key={idx} className="p-3 bg-orange-950/20 rounded-lg border border-orange-900/40 transition hover:border-orange-600/50">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-blue-100">{a.action}</span>
+                      <span className="text-xs font-bold text-orange-200">{a.action}</span>
                       <div className="flex items-center gap-2">
                         {getRouteBadge(a.route)}
                         {a.route !== 'auto' && (
@@ -103,7 +103,7 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
                             className={`px-2.5 py-1 text-[10px] font-bold rounded-md transition flex items-center gap-1 shadow-sm ${
                               isApproved
                                 ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 cursor-default'
-                                : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer active:scale-95'
+                                : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white cursor-pointer active:scale-95'
                             }`}
                           >
                             {isApproved ? (
@@ -128,14 +128,14 @@ export default function ActionTimeline({ nba, evidenceRequests, onApprove }) {
 
       {/* Controlled Evidence Request & Response Interlude */}
       {evReq && (
-        <div className="p-3.5 bg-purple-950/30 rounded-xl border border-purple-900/50 flex items-start gap-3">
-          <div className="w-7 h-7 rounded-lg bg-purple-900/40 border border-purple-700/50 flex items-center justify-center text-purple-400 shrink-0">
-            <UserCheck className="w-4 h-4" />
+        <div className="p-3.5 bg-orange-950/30 rounded-xl border border-orange-900/50 flex items-start gap-3">
+          <div className="w-7 h-7 rounded-lg bg-orange-900/40 border border-orange-700/50 flex items-center justify-center text-orange-400 shrink-0">
+            <UserCheck className="w-4 h-4 text-orange-300" />
           </div>
           <div className="text-xs space-y-1">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-purple-300">Controlled Follow-Up Verification Ingested</span>
-              <span className="text-[10px] font-mono bg-purple-900/60 text-purple-200 px-1.5 py-0.5 rounded">
+              <span className="font-bold text-orange-300">Controlled Follow-Up Verification Ingested</span>
+              <span className="text-[10px] font-mono bg-orange-900/60 text-orange-200 px-1.5 py-0.5 rounded">
                 Type: {evReq.type}
               </span>
             </div>
